@@ -60,6 +60,11 @@ func Seed(v string) predicate.Run {
 	return predicate.Run(sql.FieldEQ(FieldSeed, v))
 }
 
+// Priority applies equality check predicate on the "priority" field. It's identical to PriorityEQ.
+func Priority(v int64) predicate.Run {
+	return predicate.Run(sql.FieldEQ(FieldPriority, v))
+}
+
 // Score applies equality check predicate on the "score" field. It's identical to ScoreEQ.
 func Score(v float64) predicate.Run {
 	return predicate.Run(sql.FieldEQ(FieldScore, v))
@@ -178,6 +183,46 @@ func StatusIn(vs ...Status) predicate.Run {
 // StatusNotIn applies the NotIn predicate on the "status" field.
 func StatusNotIn(vs ...Status) predicate.Run {
 	return predicate.Run(sql.FieldNotIn(FieldStatus, vs...))
+}
+
+// PriorityEQ applies the EQ predicate on the "priority" field.
+func PriorityEQ(v int64) predicate.Run {
+	return predicate.Run(sql.FieldEQ(FieldPriority, v))
+}
+
+// PriorityNEQ applies the NEQ predicate on the "priority" field.
+func PriorityNEQ(v int64) predicate.Run {
+	return predicate.Run(sql.FieldNEQ(FieldPriority, v))
+}
+
+// PriorityIn applies the In predicate on the "priority" field.
+func PriorityIn(vs ...int64) predicate.Run {
+	return predicate.Run(sql.FieldIn(FieldPriority, vs...))
+}
+
+// PriorityNotIn applies the NotIn predicate on the "priority" field.
+func PriorityNotIn(vs ...int64) predicate.Run {
+	return predicate.Run(sql.FieldNotIn(FieldPriority, vs...))
+}
+
+// PriorityGT applies the GT predicate on the "priority" field.
+func PriorityGT(v int64) predicate.Run {
+	return predicate.Run(sql.FieldGT(FieldPriority, v))
+}
+
+// PriorityGTE applies the GTE predicate on the "priority" field.
+func PriorityGTE(v int64) predicate.Run {
+	return predicate.Run(sql.FieldGTE(FieldPriority, v))
+}
+
+// PriorityLT applies the LT predicate on the "priority" field.
+func PriorityLT(v int64) predicate.Run {
+	return predicate.Run(sql.FieldLT(FieldPriority, v))
+}
+
+// PriorityLTE applies the LTE predicate on the "priority" field.
+func PriorityLTE(v int64) predicate.Run {
+	return predicate.Run(sql.FieldLTE(FieldPriority, v))
 }
 
 // ScoreEQ applies the EQ predicate on the "score" field.

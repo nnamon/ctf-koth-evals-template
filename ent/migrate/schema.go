@@ -41,7 +41,8 @@ var (
 	RunsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "seed", Type: field.TypeString},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "claimed", "running", "succeeded", "failed", "timed_out"}, Default: "pending"},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "claimed", "running", "succeeded", "failed", "timed_out", "cancelled"}, Default: "pending"},
+		{Name: "priority", Type: field.TypeInt64, Default: 0},
 		{Name: "score", Type: field.TypeFloat64, Nullable: true},
 		{Name: "result", Type: field.TypeJSON, Nullable: true},
 		{Name: "error", Type: field.TypeString, Nullable: true},
@@ -61,13 +62,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "runs_submissions_runs",
-				Columns:    []*schema.Column{RunsColumns[11]},
+				Columns:    []*schema.Column{RunsColumns[12]},
 				RefColumns: []*schema.Column{SubmissionsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "runs_suites_runs",
-				Columns:    []*schema.Column{RunsColumns[12]},
+				Columns:    []*schema.Column{RunsColumns[13]},
 				RefColumns: []*schema.Column{SuitesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -76,7 +77,7 @@ var (
 			{
 				Name:    "run_status_claimed_at",
 				Unique:  false,
-				Columns: []*schema.Column{RunsColumns[2], RunsColumns[7]},
+				Columns: []*schema.Column{RunsColumns[2], RunsColumns[8]},
 			},
 		},
 	}

@@ -46,6 +46,10 @@ type SubmissionSummary struct {
 	ArtifactName string    `json:"artifact_name"`
 	ArtifactSize int64     `json:"artifact_size"`
 	CreatedAt    time.Time `json:"created_at"`
+	// Runs is the aggregated count breakdown across every run this
+	// submission has produced (across all suites). Drives the
+	// status pills and action button gating on the /submissions list.
+	Runs RunCounts `json:"runs"`
 }
 
 // SubmissionDetail is the response for GET /api/submissions/{id}, plus the
@@ -130,4 +134,5 @@ type RunCounts struct {
 	Failed    int `json:"failed"`
 	TimedOut  int `json:"timed_out"`
 	Pending   int `json:"pending"`
+	Cancelled int `json:"cancelled"`
 }

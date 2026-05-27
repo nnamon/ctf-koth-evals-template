@@ -49,7 +49,7 @@ func (s *Deps) handleClaim(w http.ResponseWriter, req *http.Request) {
 
 	pending, err := tx.Run.Query().
 		Where(run.StatusEQ(run.StatusPending)).
-		Order(ent.Asc(run.FieldCreatedAt)).
+		Order(ent.Desc(run.FieldPriority), ent.Asc(run.FieldCreatedAt)).
 		WithSuite(func(q *ent.SuiteQuery) {
 			q.WithChallenge()
 		}).

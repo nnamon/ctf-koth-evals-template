@@ -17,8 +17,13 @@ func (Run) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("seed").NotEmpty(),
 		field.Enum("status").
-			Values("pending", "claimed", "running", "succeeded", "failed", "timed_out").
+			Values("pending", "claimed", "running", "succeeded", "failed", "timed_out", "cancelled").
 			Default("pending"),
+		// priority is consulted by the claim query: higher values are
+		// claimed first, ties broken by created_at ASC (FIFO). Operator
+		// actions set this to time.Now().UnixNano() so "send to top" is
+		// just "newest prioritization wins".
+		field.Int64("priority").Default(0),
 		field.Float("score").Optional().Nillable(),
 		field.JSON("result", map[string]any{}).Optional(),
 		field.String("error").Optional(),

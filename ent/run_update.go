@@ -58,6 +58,27 @@ func (_u *RunUpdate) SetNillableStatus(v *run.Status) *RunUpdate {
 	return _u
 }
 
+// SetPriority sets the "priority" field.
+func (_u *RunUpdate) SetPriority(v int64) *RunUpdate {
+	_u.mutation.ResetPriority()
+	_u.mutation.SetPriority(v)
+	return _u
+}
+
+// SetNillablePriority sets the "priority" field if the given value is not nil.
+func (_u *RunUpdate) SetNillablePriority(v *int64) *RunUpdate {
+	if v != nil {
+		_u.SetPriority(*v)
+	}
+	return _u
+}
+
+// AddPriority adds value to the "priority" field.
+func (_u *RunUpdate) AddPriority(v int64) *RunUpdate {
+	_u.mutation.AddPriority(v)
+	return _u
+}
+
 // SetScore sets the "score" field.
 func (_u *RunUpdate) SetScore(v float64) *RunUpdate {
 	_u.mutation.ResetScore()
@@ -302,6 +323,12 @@ func (_u *RunUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(run.FieldStatus, field.TypeEnum, value)
 	}
+	if value, ok := _u.mutation.Priority(); ok {
+		_spec.SetField(run.FieldPriority, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedPriority(); ok {
+		_spec.AddField(run.FieldPriority, field.TypeInt64, value)
+	}
 	if value, ok := _u.mutation.Score(); ok {
 		_spec.SetField(run.FieldScore, field.TypeFloat64, value)
 	}
@@ -450,6 +477,27 @@ func (_u *RunUpdateOne) SetNillableStatus(v *run.Status) *RunUpdateOne {
 	if v != nil {
 		_u.SetStatus(*v)
 	}
+	return _u
+}
+
+// SetPriority sets the "priority" field.
+func (_u *RunUpdateOne) SetPriority(v int64) *RunUpdateOne {
+	_u.mutation.ResetPriority()
+	_u.mutation.SetPriority(v)
+	return _u
+}
+
+// SetNillablePriority sets the "priority" field if the given value is not nil.
+func (_u *RunUpdateOne) SetNillablePriority(v *int64) *RunUpdateOne {
+	if v != nil {
+		_u.SetPriority(*v)
+	}
+	return _u
+}
+
+// AddPriority adds value to the "priority" field.
+func (_u *RunUpdateOne) AddPriority(v int64) *RunUpdateOne {
+	_u.mutation.AddPriority(v)
 	return _u
 }
 
@@ -726,6 +774,12 @@ func (_u *RunUpdateOne) sqlSave(ctx context.Context) (_node *Run, err error) {
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(run.FieldStatus, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.Priority(); ok {
+		_spec.SetField(run.FieldPriority, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedPriority(); ok {
+		_spec.AddField(run.FieldPriority, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.Score(); ok {
 		_spec.SetField(run.FieldScore, field.TypeFloat64, value)

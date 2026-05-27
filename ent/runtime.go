@@ -41,8 +41,12 @@ func init() {
 	runDescSeed := runFields[0].Descriptor()
 	// run.SeedValidator is a validator for the "seed" field. It is called by the builders before save.
 	run.SeedValidator = runDescSeed.Validators[0].(func(string) error)
+	// runDescPriority is the schema descriptor for priority field.
+	runDescPriority := runFields[2].Descriptor()
+	// run.DefaultPriority holds the default value on creation for the priority field.
+	run.DefaultPriority = runDescPriority.Default.(int64)
 	// runDescCreatedAt is the schema descriptor for created_at field.
-	runDescCreatedAt := runFields[9].Descriptor()
+	runDescCreatedAt := runFields[10].Descriptor()
 	// run.DefaultCreatedAt holds the default value on creation for the created_at field.
 	run.DefaultCreatedAt = runDescCreatedAt.Default.(func() time.Time)
 	submissionFields := schema.Submission{}.Fields()

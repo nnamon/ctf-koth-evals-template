@@ -19,6 +19,8 @@ const (
 	FieldSeed = "seed"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldPriority holds the string denoting the priority field in the database.
+	FieldPriority = "priority"
 	// FieldScore holds the string denoting the score field in the database.
 	FieldScore = "score"
 	// FieldResult holds the string denoting the result field in the database.
@@ -62,6 +64,7 @@ var Columns = []string{
 	FieldID,
 	FieldSeed,
 	FieldStatus,
+	FieldPriority,
 	FieldScore,
 	FieldResult,
 	FieldError,
@@ -97,6 +100,8 @@ func ValidColumn(column string) bool {
 var (
 	// SeedValidator is a validator for the "seed" field. It is called by the builders before save.
 	SeedValidator func(string) error
+	// DefaultPriority holds the default value on creation for the "priority" field.
+	DefaultPriority int64
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 )
@@ -115,6 +120,7 @@ const (
 	StatusSucceeded Status = "succeeded"
 	StatusFailed    Status = "failed"
 	StatusTimedOut  Status = "timed_out"
+	StatusCancelled Status = "cancelled"
 )
 
 func (s Status) String() string {
@@ -124,7 +130,7 @@ func (s Status) String() string {
 // StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
 func StatusValidator(s Status) error {
 	switch s {
-	case StatusPending, StatusClaimed, StatusRunning, StatusSucceeded, StatusFailed, StatusTimedOut:
+	case StatusPending, StatusClaimed, StatusRunning, StatusSucceeded, StatusFailed, StatusTimedOut, StatusCancelled:
 		return nil
 	default:
 		return fmt.Errorf("run: invalid enum value for status field: %q", s)
@@ -147,6 +153,11 @@ func BySeed(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByPriority orders the results by the priority field.
+func ByPriority(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPriority, opts...).ToFunc()
 }
 
 // ByScore orders the results by the score field.

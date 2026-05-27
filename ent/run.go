@@ -24,6 +24,8 @@ type Run struct {
 	Seed string `json:"seed,omitempty"`
 	// Status holds the value of the "status" field.
 	Status run.Status `json:"status,omitempty"`
+	// Priority holds the value of the "priority" field.
+	Priority int64 `json:"priority,omitempty"`
 	// Score holds the value of the "score" field.
 	Score *float64 `json:"score,omitempty"`
 	// Result holds the value of the "result" field.
@@ -90,7 +92,7 @@ func (*Run) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case run.FieldScore:
 			values[i] = new(sql.NullFloat64)
-		case run.FieldID:
+		case run.FieldID, run.FieldPriority:
 			values[i] = new(sql.NullInt64)
 		case run.FieldSeed, run.FieldStatus, run.FieldError, run.FieldWorkerID:
 			values[i] = new(sql.NullString)
@@ -132,6 +134,12 @@ func (_m *Run) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
 				_m.Status = run.Status(value.String)
+			}
+		case run.FieldPriority:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field priority", values[i])
+			} else if value.Valid {
+				_m.Priority = value.Int64
 			}
 		case run.FieldScore:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
@@ -252,6 +260,9 @@ func (_m *Run) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Status))
+	builder.WriteString(", ")
+	builder.WriteString("priority=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Priority))
 	builder.WriteString(", ")
 	if v := _m.Score; v != nil {
 		builder.WriteString("score=")

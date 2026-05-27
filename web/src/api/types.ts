@@ -32,13 +32,17 @@ export type CreateSuiteRequest = {
   scoring?: Record<string, unknown>;
 };
 
-export type SubmissionSummary = {
+type SubmissionBase = {
   id: number;
   name?: string;
   submitter?: string;
   artifact_name: string;
   artifact_size: number;
   created_at: string;
+};
+
+export type SubmissionSummary = SubmissionBase & {
+  runs: RunCounts;
 };
 
 export type RunStatus =
@@ -61,7 +65,7 @@ export type RunSummary = {
   created_at: string;
 };
 
-export type SubmissionDetail = SubmissionSummary & {
+export type SubmissionDetail = SubmissionBase & {
   runs: RunSummary[];
 };
 
@@ -78,6 +82,7 @@ export type RunCounts = {
   failed: number;
   timed_out: number;
   pending: number;
+  cancelled: number;
 };
 
 export type Metrics = {

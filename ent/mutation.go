@@ -844,6 +844,8 @@ type RunMutation struct {
 	id                *int
 	seed              *string
 	status            *run.Status
+	priority          *int64
+	addpriority       *int64
 	score             *float64
 	addscore          *float64
 	result            *map[string]interface{}
@@ -1031,6 +1033,62 @@ func (m *RunMutation) OldStatus(ctx context.Context) (v run.Status, err error) {
 // ResetStatus resets all changes to the "status" field.
 func (m *RunMutation) ResetStatus() {
 	m.status = nil
+}
+
+// SetPriority sets the "priority" field.
+func (m *RunMutation) SetPriority(i int64) {
+	m.priority = &i
+	m.addpriority = nil
+}
+
+// Priority returns the value of the "priority" field in the mutation.
+func (m *RunMutation) Priority() (r int64, exists bool) {
+	v := m.priority
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPriority returns the old "priority" field's value of the Run entity.
+// If the Run object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RunMutation) OldPriority(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPriority is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPriority requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPriority: %w", err)
+	}
+	return oldValue.Priority, nil
+}
+
+// AddPriority adds i to the "priority" field.
+func (m *RunMutation) AddPriority(i int64) {
+	if m.addpriority != nil {
+		*m.addpriority += i
+	} else {
+		m.addpriority = &i
+	}
+}
+
+// AddedPriority returns the value that was added to the "priority" field in this mutation.
+func (m *RunMutation) AddedPriority() (r int64, exists bool) {
+	v := m.addpriority
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetPriority resets all changes to the "priority" field.
+func (m *RunMutation) ResetPriority() {
+	m.priority = nil
+	m.addpriority = nil
 }
 
 // SetScore sets the "score" field.
@@ -1545,12 +1603,15 @@ func (m *RunMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RunMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.seed != nil {
 		fields = append(fields, run.FieldSeed)
 	}
 	if m.status != nil {
 		fields = append(fields, run.FieldStatus)
+	}
+	if m.priority != nil {
+		fields = append(fields, run.FieldPriority)
 	}
 	if m.score != nil {
 		fields = append(fields, run.FieldScore)
@@ -1588,6 +1649,8 @@ func (m *RunMutation) Field(name string) (ent.Value, bool) {
 		return m.Seed()
 	case run.FieldStatus:
 		return m.Status()
+	case run.FieldPriority:
+		return m.Priority()
 	case run.FieldScore:
 		return m.Score()
 	case run.FieldResult:
@@ -1617,6 +1680,8 @@ func (m *RunMutation) OldField(ctx context.Context, name string) (ent.Value, err
 		return m.OldSeed(ctx)
 	case run.FieldStatus:
 		return m.OldStatus(ctx)
+	case run.FieldPriority:
+		return m.OldPriority(ctx)
 	case run.FieldScore:
 		return m.OldScore(ctx)
 	case run.FieldResult:
@@ -1655,6 +1720,13 @@ func (m *RunMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatus(v)
+		return nil
+	case run.FieldPriority:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPriority(v)
 		return nil
 	case run.FieldScore:
 		v, ok := value.(float64)
@@ -1720,6 +1792,9 @@ func (m *RunMutation) SetField(name string, value ent.Value) error {
 // this mutation.
 func (m *RunMutation) AddedFields() []string {
 	var fields []string
+	if m.addpriority != nil {
+		fields = append(fields, run.FieldPriority)
+	}
 	if m.addscore != nil {
 		fields = append(fields, run.FieldScore)
 	}
@@ -1731,6 +1806,8 @@ func (m *RunMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *RunMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
+	case run.FieldPriority:
+		return m.AddedPriority()
 	case run.FieldScore:
 		return m.AddedScore()
 	}
@@ -1742,6 +1819,13 @@ func (m *RunMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *RunMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case run.FieldPriority:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPriority(v)
+		return nil
 	case run.FieldScore:
 		v, ok := value.(float64)
 		if !ok {
@@ -1826,6 +1910,9 @@ func (m *RunMutation) ResetField(name string) error {
 		return nil
 	case run.FieldStatus:
 		m.ResetStatus()
+		return nil
+	case run.FieldPriority:
+		m.ResetPriority()
 		return nil
 	case run.FieldScore:
 		m.ResetScore()

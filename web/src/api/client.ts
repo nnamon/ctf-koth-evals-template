@@ -68,6 +68,13 @@ export const api = {
     request<SubmissionDetail>(`/api/submissions/${id}`),
   getRun: (id: number) => request<RunDetail>(`/api/runs/${id}`),
   queue: () => request<QueueStatus>("/api/queue"),
+
+  cancelSubmission: (id: number) =>
+    request<{ cancelled: number }>(`/api/submissions/${id}/cancel`, { method: "POST" }),
+  retrySubmission: (id: number) =>
+    request<{ retried: number }>(`/api/submissions/${id}/retry`, { method: "POST" }),
+  prioritizeSubmission: (id: number) =>
+    request<{ prioritized: number }>(`/api/submissions/${id}/prioritize`, { method: "POST" }),
   uploadSubmission: async (
     suiteIds: number[],
     name: string,

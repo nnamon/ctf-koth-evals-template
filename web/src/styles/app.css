@@ -87,6 +87,15 @@
   color: var(--text-faint);
 }
 
+/* Action buttons on the /submissions row — compact mono glyphs. */
+.btn.action-btn {
+  padding: 2px 8px;
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.4;
+  min-width: 28px;
+}
+
 /* Queue banner — shows current pending count, throughput, and ETA when
    anything is in flight. Sits between the suite chips and the leaderboard. */
 .queue-banner {

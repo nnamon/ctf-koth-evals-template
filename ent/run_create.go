@@ -44,6 +44,20 @@ func (_c *RunCreate) SetNillableStatus(v *run.Status) *RunCreate {
 	return _c
 }
 
+// SetPriority sets the "priority" field.
+func (_c *RunCreate) SetPriority(v int64) *RunCreate {
+	_c.mutation.SetPriority(v)
+	return _c
+}
+
+// SetNillablePriority sets the "priority" field if the given value is not nil.
+func (_c *RunCreate) SetNillablePriority(v *int64) *RunCreate {
+	if v != nil {
+		_c.SetPriority(*v)
+	}
+	return _c
+}
+
 // SetScore sets the "score" field.
 func (_c *RunCreate) SetScore(v float64) *RunCreate {
 	_c.mutation.SetScore(v)
@@ -209,6 +223,10 @@ func (_c *RunCreate) defaults() {
 		v := run.DefaultStatus
 		_c.mutation.SetStatus(v)
 	}
+	if _, ok := _c.mutation.Priority(); !ok {
+		v := run.DefaultPriority
+		_c.mutation.SetPriority(v)
+	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := run.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
@@ -232,6 +250,9 @@ func (_c *RunCreate) check() error {
 		if err := run.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Run.status": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.Priority(); !ok {
+		return &ValidationError{Name: "priority", err: errors.New(`ent: missing required field "Run.priority"`)}
 	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Run.created_at"`)}
@@ -276,6 +297,10 @@ func (_c *RunCreate) createSpec() (*Run, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(run.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
+	}
+	if value, ok := _c.mutation.Priority(); ok {
+		_spec.SetField(run.FieldPriority, field.TypeInt64, value)
+		_node.Priority = value
 	}
 	if value, ok := _c.mutation.Score(); ok {
 		_spec.SetField(run.FieldScore, field.TypeFloat64, value)
@@ -416,6 +441,24 @@ func (u *RunUpsert) SetStatus(v run.Status) *RunUpsert {
 // UpdateStatus sets the "status" field to the value that was provided on create.
 func (u *RunUpsert) UpdateStatus() *RunUpsert {
 	u.SetExcluded(run.FieldStatus)
+	return u
+}
+
+// SetPriority sets the "priority" field.
+func (u *RunUpsert) SetPriority(v int64) *RunUpsert {
+	u.Set(run.FieldPriority, v)
+	return u
+}
+
+// UpdatePriority sets the "priority" field to the value that was provided on create.
+func (u *RunUpsert) UpdatePriority() *RunUpsert {
+	u.SetExcluded(run.FieldPriority)
+	return u
+}
+
+// AddPriority adds v to the "priority" field.
+func (u *RunUpsert) AddPriority(v int64) *RunUpsert {
+	u.Add(run.FieldPriority, v)
 	return u
 }
 
@@ -621,6 +664,27 @@ func (u *RunUpsertOne) SetStatus(v run.Status) *RunUpsertOne {
 func (u *RunUpsertOne) UpdateStatus() *RunUpsertOne {
 	return u.Update(func(s *RunUpsert) {
 		s.UpdateStatus()
+	})
+}
+
+// SetPriority sets the "priority" field.
+func (u *RunUpsertOne) SetPriority(v int64) *RunUpsertOne {
+	return u.Update(func(s *RunUpsert) {
+		s.SetPriority(v)
+	})
+}
+
+// AddPriority adds v to the "priority" field.
+func (u *RunUpsertOne) AddPriority(v int64) *RunUpsertOne {
+	return u.Update(func(s *RunUpsert) {
+		s.AddPriority(v)
+	})
+}
+
+// UpdatePriority sets the "priority" field to the value that was provided on create.
+func (u *RunUpsertOne) UpdatePriority() *RunUpsertOne {
+	return u.Update(func(s *RunUpsert) {
+		s.UpdatePriority()
 	})
 }
 
@@ -1014,6 +1078,27 @@ func (u *RunUpsertBulk) SetStatus(v run.Status) *RunUpsertBulk {
 func (u *RunUpsertBulk) UpdateStatus() *RunUpsertBulk {
 	return u.Update(func(s *RunUpsert) {
 		s.UpdateStatus()
+	})
+}
+
+// SetPriority sets the "priority" field.
+func (u *RunUpsertBulk) SetPriority(v int64) *RunUpsertBulk {
+	return u.Update(func(s *RunUpsert) {
+		s.SetPriority(v)
+	})
+}
+
+// AddPriority adds v to the "priority" field.
+func (u *RunUpsertBulk) AddPriority(v int64) *RunUpsertBulk {
+	return u.Update(func(s *RunUpsert) {
+		s.AddPriority(v)
+	})
+}
+
+// UpdatePriority sets the "priority" field to the value that was provided on create.
+func (u *RunUpsertBulk) UpdatePriority() *RunUpsertBulk {
+	return u.Update(func(s *RunUpsert) {
+		s.UpdatePriority()
 	})
 }
 

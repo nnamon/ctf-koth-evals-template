@@ -40,6 +40,9 @@ func (s *Deps) mountPublic(api chi.Router) {
 	api.Get("/submissions", s.listSubmissions)
 	api.Post("/submissions", s.createSubmission)
 	api.Get("/submissions/{id}", s.getSubmission)
+	api.Post("/submissions/{id}/cancel", s.cancelSubmission)
+	api.Post("/submissions/{id}/retry", s.retrySubmission)
+	api.Post("/submissions/{id}/prioritize", s.prioritizeSubmission)
 
 	api.Get("/runs/{id}", s.getRun)
 
@@ -195,6 +198,7 @@ func suiteDetail(r *ent.Suite) wireapi.SuiteDetail {
 // ----- submissions -----
 
 func (s *Deps) listSubmissions(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
 	rows, err := s.Client.Submission.Query().
 		Order(ent.Desc(submission.FieldCreatedAt)).
 		Select(
@@ -205,14 +209,57 @@ func (s *Deps) listSubmissions(w http.ResponseWriter, req *http.Request) {
 			submission.FieldArtifactSize,
 			submission.FieldCreatedAt,
 		).
-		All(req.Context())
+		All(ctx)
 	if err != nil {
 		httpError(w, http.StatusInternalServerError, "query: %v", err)
 		return
 	}
+
+	// Single query for all this listing's per-submission run counts so the
+	// /submissions page can show pills + gate action buttons without an
+	// extra request per row. Aggregate by (submission, status).
+	type countRow struct {
+		SubmissionRuns int        `sql:"submission_runs"`
+		Status         run.Status `sql:"status"`
+		N              int        `sql:"n"`
+	}
+	var counts []countRow
+	if err := s.Client.Run.Query().
+		GroupBy("submission_runs", run.FieldStatus).
+		Aggregate(ent.As(ent.Count(), "n")).
+		Scan(ctx, &counts); err != nil {
+		httpError(w, http.StatusInternalServerError, "count runs: %v", err)
+		return
+	}
+	byID := map[int]*wireapi.RunCounts{}
+	for _, c := range counts {
+		rc, ok := byID[c.SubmissionRuns]
+		if !ok {
+			rc = &wireapi.RunCounts{}
+			byID[c.SubmissionRuns] = rc
+		}
+		rc.Total += c.N
+		switch c.Status {
+		case run.StatusSucceeded:
+			rc.Succeeded += c.N
+		case run.StatusFailed:
+			rc.Failed += c.N
+		case run.StatusTimedOut:
+			rc.TimedOut += c.N
+		case run.StatusCancelled:
+			rc.Cancelled += c.N
+		case run.StatusPending, run.StatusClaimed, run.StatusRunning:
+			rc.Pending += c.N
+		}
+	}
+
 	out := make([]wireapi.SubmissionSummary, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, submissionSummary(r))
+		sm := submissionSummary(r)
+		if rc, ok := byID[r.ID]; ok {
+			sm.Runs = *rc
+		}
+		out = append(out, sm)
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -401,6 +448,93 @@ func (s *Deps) getSubmission(w http.ResponseWriter, req *http.Request) {
 	writeJSON(w, http.StatusOK, detail)
 }
 
+// cancelSubmission marks all of a submission's pending or claimed runs as
+// cancelled. Already-running runs aren't interrupted — the worker will
+// finish and post a result, which the server records normally. This keeps
+// the design free of cross-process cancellation plumbing at the cost of a
+// brief window where in-flight work continues.
+func (s *Deps) cancelSubmission(w http.ResponseWriter, req *http.Request) {
+	id, ok := pathID(w, req, "id")
+	if !ok {
+		return
+	}
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+
+	n, err := s.Client.Run.Update().
+		Where(
+			run.HasSubmissionWith(submission.IDEQ(id)),
+			run.StatusIn(run.StatusPending, run.StatusClaimed),
+		).
+		SetStatus(run.StatusCancelled).
+		SetFinishedAt(time.Now()).
+		Save(req.Context())
+	if err != nil {
+		httpError(w, http.StatusInternalServerError, "cancel: %v", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]int{"cancelled": n})
+}
+
+// retrySubmission re-enqueues every failed / timed-out / cancelled run for
+// the submission. The original row is mutated in place — all in-flight
+// fields (worker_id, claimed_at, started_at, finished_at, score, result,
+// error) are cleared so the next claim has a clean slate.
+func (s *Deps) retrySubmission(w http.ResponseWriter, req *http.Request) {
+	id, ok := pathID(w, req, "id")
+	if !ok {
+		return
+	}
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+
+	n, err := s.Client.Run.Update().
+		Where(
+			run.HasSubmissionWith(submission.IDEQ(id)),
+			run.StatusIn(run.StatusFailed, run.StatusTimedOut, run.StatusCancelled),
+		).
+		SetStatus(run.StatusPending).
+		SetWorkerID("").
+		ClearClaimedAt().
+		ClearStartedAt().
+		ClearFinishedAt().
+		ClearScore().
+		ClearResult().
+		SetError("").
+		Save(req.Context())
+	if err != nil {
+		httpError(w, http.StatusInternalServerError, "retry: %v", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]int{"retried": n})
+}
+
+// prioritizeSubmission bumps the priority of all this submission's pending
+// runs above everything else currently queued. Uses the current unix-nano
+// timestamp so subsequent prioritizations naturally stack — the most
+// recently prioritized submission gets claimed next.
+func (s *Deps) prioritizeSubmission(w http.ResponseWriter, req *http.Request) {
+	id, ok := pathID(w, req, "id")
+	if !ok {
+		return
+	}
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+
+	n, err := s.Client.Run.Update().
+		Where(
+			run.HasSubmissionWith(submission.IDEQ(id)),
+			run.StatusEQ(run.StatusPending),
+		).
+		SetPriority(time.Now().UnixNano()).
+		Save(req.Context())
+	if err != nil {
+		httpError(w, http.StatusInternalServerError, "prioritize: %v", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]int{"prioritized": n})
+}
+
 func submissionSummary(r *ent.Submission) wireapi.SubmissionSummary {
 	return wireapi.SubmissionSummary{
 		ID:           r.ID,
@@ -544,6 +678,8 @@ func (s *Deps) getLeaderboard(w http.ResponseWriter, req *http.Request) {
 			b.counts.Failed++
 		case run.StatusTimedOut:
 			b.counts.TimedOut++
+		case run.StatusCancelled:
+			b.counts.Cancelled++
 		case run.StatusPending, run.StatusClaimed, run.StatusRunning:
 			b.counts.Pending++
 		}

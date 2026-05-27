@@ -1,0 +1,27 @@
+.git
+.gitignore
+.idea
+.vscode
+.DS_Store
+
+# build outputs
+ctf-evals
+cmd/ctf-evals/ctf-evals
+data/
+dist/
+challenges/*/engine/engine
+
+# frontend
+web/node_modules/
+web/dist/
+
+# docs / meta
+README.md
+*.md
+
+# docker artifacts (we DO need docker-entrypoint.sh — Dockerfile COPYs it)
+Dockerfile
+docker-compose*.yml
+.dockerignore
+.env
+.env.*

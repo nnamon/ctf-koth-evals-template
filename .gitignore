@@ -1,0 +1,27 @@
+# build artifacts
+/data/
+/dist/
+/ctf-evals
+/cmd/ctf-evals/ctf-evals
+
+# challenges
+challenges/*/engine/engine
+
+# frontend
+web/node_modules/
+web/dist/
+
+# operator secrets
+.env
+.env.*
+!.env.example
+
+# automation artifacts
+.playwright-cli/
+web/.playwright-cli/
+
+# editor / OS
+.DS_Store
+*.swp
+.idea/
+.vscode/

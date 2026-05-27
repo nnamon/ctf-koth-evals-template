@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Adapter between the platform's working-dir contract and the regex-count engine.
+# Reads submission/pattern.txt and inputs/seed.txt, invokes the engine, writes result.json.
+set -euo pipefail
+
+WORKDIR=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --workdir=*) WORKDIR="${1#*=}"; shift ;;
+    --workdir)   shift; WORKDIR="${1:-}"; shift ;;
+    *) echo "wrapper: unknown arg: $1" >&2; exit 2 ;;
+  esac
+done
+
+if [[ -z "$WORKDIR" ]]; then
+  echo "wrapper: --workdir required" >&2
+  exit 2
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENGINE="$SCRIPT_DIR/engine/engine"
+
+if [[ ! -x "$ENGINE" ]]; then
+  echo "wrapper: engine not built — run \`make\` in $SCRIPT_DIR" >&2
+  exit 3
+fi
+
+PATTERN_FILE="$WORKDIR/submission/pattern.txt"
+SEED_FILE="$WORKDIR/inputs/seed.txt"
+
+if [[ ! -f "$PATTERN_FILE" ]]; then
+  echo "wrapper: missing $PATTERN_FILE" >&2
+  exit 4
+fi
+if [[ ! -f "$SEED_FILE" ]]; then
+  echo "wrapper: missing $SEED_FILE" >&2
+  exit 4
+fi
+
+REGEX="$(cat "$PATTERN_FILE")"
+SEED="$(cat "$SEED_FILE")"
+
+# Suite parameters arrive via CTF_PARAM_* env vars set by the worker.
+ENGINE_ARGS=()
+if [[ -n "${CTF_PARAM_SLEEP:-}" && "${CTF_PARAM_SLEEP}" != "0" ]]; then
+  ENGINE_ARGS+=("--sleep=${CTF_PARAM_SLEEP}")
+fi
+
+COUNT="$("$ENGINE" "${ENGINE_ARGS[@]+"${ENGINE_ARGS[@]}"}" "$REGEX" "$SEED")"
+
+printf '{"score": %d}\n' "$COUNT" > "$WORKDIR/result.json"

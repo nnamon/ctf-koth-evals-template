@@ -1,0 +1,13 @@
+{
+  "name": "regex-count",
+  "description": "Engine SHA-512s the seed bytes, base64-encodes the digest, and counts matches of the player's regex in that string.",
+  "submission": {
+    "file": "pattern.txt",
+    "format": "text",
+    "max_bytes": 4096
+  },
+  "seed": {
+    "kind": "hex",
+    "bits": 64
+  }
+}

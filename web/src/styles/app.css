@@ -1,0 +1,146 @@
+/* App-specific overrides on top of agent-aesthetics. Keep this file thin so
+   upstream styles.css updates merge cleanly. */
+
+/* Right side of .top-row: navigation + utility actions, all small mono text
+   to match the kit's restrained .signin pattern. */
+.page-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: baseline;
+  justify-content: flex-end;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.page-nav .page-nav-link {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-decoration: none;
+}
+.page-nav .page-nav-link:hover {
+  color: var(--text);
+}
+.page-nav .page-nav-link.active {
+  color: var(--accent);
+}
+
+/* Page header — flex row used on Overview, SuiteDetail to put an action
+   button next to the h1. Wraps on narrow widths. */
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  row-gap: var(--space-2);
+}
+.page-header h1 {
+  margin-bottom: 0;
+}
+.page-header .btn {
+  margin-left: auto;
+}
+
+/* Sortable column headers on the leaderboard. */
+.data.leaderboard th.sortable,
+.data.leaderboard th.sort-active {
+  user-select: none;
+}
+.data.leaderboard th.sortable:hover {
+  color: var(--text);
+}
+.data.leaderboard th.sort-active {
+  color: var(--accent);
+}
+.data.leaderboard th .sort-arrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  margin-left: 2px;
+}
+.data.leaderboard td.metric-active code {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Divider between ranked rows and in-flight rows. */
+.data.leaderboard tr.leaderboard-divider td {
+  background: transparent;
+  border-bottom: 1px solid var(--rule);
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-1);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 11px;
+}
+
+/* In-flight rows are muted — not part of the ranking. */
+.data.leaderboard tr.in-flight-row td,
+.data.leaderboard tr.in-flight-row a,
+.data.leaderboard tr.in-flight-row code {
+  color: var(--text-faint);
+}
+.data.leaderboard tr.in-flight-row td code.t-num {
+  color: var(--text-faint);
+}
+
+/* Queue banner — shows current pending count, throughput, and ETA when
+   anything is in flight. Sits between the suite chips and the leaderboard. */
+.queue-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  margin: var(--space-3) 0 var(--space-4);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Suite picker — horizontal scrollable strip of mono-styled chips. Used on
+   the front-page leaderboard to swap which suite is shown. */
+.suite-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 var(--space-5);
+}
+.suite-chips .chip {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-code);
+  cursor: pointer;
+  line-height: 1;
+}
+.suite-chips .chip:hover {
+  color: var(--text);
+  border-color: var(--rule-strong);
+}
+.suite-chips .chip.active {
+  color: var(--chrome-fg);
+  background: var(--chrome-bg);
+  border-color: var(--chrome-bg);
+}
+
+@media (max-width: 640px) {
+  .top-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+  .page-nav {
+    justify-content: flex-start;
+    gap: var(--space-3);
+  }
+}

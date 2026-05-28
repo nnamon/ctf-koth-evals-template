@@ -850,6 +850,8 @@ type RunMutation struct {
 	addscore          *float64
 	result            *map[string]interface{}
 	error             *string
+	stdout            *string
+	stderr            *string
 	worker_id         *string
 	claimed_at        *time.Time
 	started_at        *time.Time
@@ -1259,6 +1261,104 @@ func (m *RunMutation) ResetError() {
 	delete(m.clearedFields, run.FieldError)
 }
 
+// SetStdout sets the "stdout" field.
+func (m *RunMutation) SetStdout(s string) {
+	m.stdout = &s
+}
+
+// Stdout returns the value of the "stdout" field in the mutation.
+func (m *RunMutation) Stdout() (r string, exists bool) {
+	v := m.stdout
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStdout returns the old "stdout" field's value of the Run entity.
+// If the Run object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RunMutation) OldStdout(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStdout is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStdout requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStdout: %w", err)
+	}
+	return oldValue.Stdout, nil
+}
+
+// ClearStdout clears the value of the "stdout" field.
+func (m *RunMutation) ClearStdout() {
+	m.stdout = nil
+	m.clearedFields[run.FieldStdout] = struct{}{}
+}
+
+// StdoutCleared returns if the "stdout" field was cleared in this mutation.
+func (m *RunMutation) StdoutCleared() bool {
+	_, ok := m.clearedFields[run.FieldStdout]
+	return ok
+}
+
+// ResetStdout resets all changes to the "stdout" field.
+func (m *RunMutation) ResetStdout() {
+	m.stdout = nil
+	delete(m.clearedFields, run.FieldStdout)
+}
+
+// SetStderr sets the "stderr" field.
+func (m *RunMutation) SetStderr(s string) {
+	m.stderr = &s
+}
+
+// Stderr returns the value of the "stderr" field in the mutation.
+func (m *RunMutation) Stderr() (r string, exists bool) {
+	v := m.stderr
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStderr returns the old "stderr" field's value of the Run entity.
+// If the Run object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RunMutation) OldStderr(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStderr is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStderr requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStderr: %w", err)
+	}
+	return oldValue.Stderr, nil
+}
+
+// ClearStderr clears the value of the "stderr" field.
+func (m *RunMutation) ClearStderr() {
+	m.stderr = nil
+	m.clearedFields[run.FieldStderr] = struct{}{}
+}
+
+// StderrCleared returns if the "stderr" field was cleared in this mutation.
+func (m *RunMutation) StderrCleared() bool {
+	_, ok := m.clearedFields[run.FieldStderr]
+	return ok
+}
+
+// ResetStderr resets all changes to the "stderr" field.
+func (m *RunMutation) ResetStderr() {
+	m.stderr = nil
+	delete(m.clearedFields, run.FieldStderr)
+}
+
 // SetWorkerID sets the "worker_id" field.
 func (m *RunMutation) SetWorkerID(s string) {
 	m.worker_id = &s
@@ -1603,7 +1703,7 @@ func (m *RunMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RunMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 13)
 	if m.seed != nil {
 		fields = append(fields, run.FieldSeed)
 	}
@@ -1621,6 +1721,12 @@ func (m *RunMutation) Fields() []string {
 	}
 	if m.error != nil {
 		fields = append(fields, run.FieldError)
+	}
+	if m.stdout != nil {
+		fields = append(fields, run.FieldStdout)
+	}
+	if m.stderr != nil {
+		fields = append(fields, run.FieldStderr)
 	}
 	if m.worker_id != nil {
 		fields = append(fields, run.FieldWorkerID)
@@ -1657,6 +1763,10 @@ func (m *RunMutation) Field(name string) (ent.Value, bool) {
 		return m.Result()
 	case run.FieldError:
 		return m.Error()
+	case run.FieldStdout:
+		return m.Stdout()
+	case run.FieldStderr:
+		return m.Stderr()
 	case run.FieldWorkerID:
 		return m.WorkerID()
 	case run.FieldClaimedAt:
@@ -1688,6 +1798,10 @@ func (m *RunMutation) OldField(ctx context.Context, name string) (ent.Value, err
 		return m.OldResult(ctx)
 	case run.FieldError:
 		return m.OldError(ctx)
+	case run.FieldStdout:
+		return m.OldStdout(ctx)
+	case run.FieldStderr:
+		return m.OldStderr(ctx)
 	case run.FieldWorkerID:
 		return m.OldWorkerID(ctx)
 	case run.FieldClaimedAt:
@@ -1748,6 +1862,20 @@ func (m *RunMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetError(v)
+		return nil
+	case run.FieldStdout:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStdout(v)
+		return nil
+	case run.FieldStderr:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStderr(v)
 		return nil
 	case run.FieldWorkerID:
 		v, ok := value.(string)
@@ -1850,6 +1978,12 @@ func (m *RunMutation) ClearedFields() []string {
 	if m.FieldCleared(run.FieldError) {
 		fields = append(fields, run.FieldError)
 	}
+	if m.FieldCleared(run.FieldStdout) {
+		fields = append(fields, run.FieldStdout)
+	}
+	if m.FieldCleared(run.FieldStderr) {
+		fields = append(fields, run.FieldStderr)
+	}
 	if m.FieldCleared(run.FieldWorkerID) {
 		fields = append(fields, run.FieldWorkerID)
 	}
@@ -1884,6 +2018,12 @@ func (m *RunMutation) ClearField(name string) error {
 		return nil
 	case run.FieldError:
 		m.ClearError()
+		return nil
+	case run.FieldStdout:
+		m.ClearStdout()
+		return nil
+	case run.FieldStderr:
+		m.ClearStderr()
 		return nil
 	case run.FieldWorkerID:
 		m.ClearWorkerID()
@@ -1922,6 +2062,12 @@ func (m *RunMutation) ResetField(name string) error {
 		return nil
 	case run.FieldError:
 		m.ResetError()
+		return nil
+	case run.FieldStdout:
+		m.ResetStdout()
+		return nil
+	case run.FieldStderr:
+		m.ResetStderr()
 		return nil
 	case run.FieldWorkerID:
 		m.ResetWorkerID()

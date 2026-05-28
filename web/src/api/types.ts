@@ -71,9 +71,12 @@ export type SubmissionDetail = SubmissionBase & {
 
 export type RunDetail = RunSummary & {
   submission_id: number;
+  submission_name?: string;
   result?: Record<string, unknown>;
   worker_id?: string;
   claimed_at?: string;
+  stdout?: string;
+  stderr?: string;
 };
 
 export type RunCounts = {

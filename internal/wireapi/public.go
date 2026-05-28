@@ -74,13 +74,16 @@ type RunSummary struct {
 }
 
 // RunDetail is the response for GET /api/runs/{id}, including the opaque
-// result blob the wrapper produced.
+// result blob the wrapper produced and the captured output tails.
 type RunDetail struct {
 	RunSummary
-	SubmissionID int            `json:"submission_id"`
-	Result       map[string]any `json:"result,omitempty"`
-	WorkerID     string         `json:"worker_id,omitempty"`
-	ClaimedAt    *time.Time     `json:"claimed_at,omitempty"`
+	SubmissionID   int            `json:"submission_id"`
+	SubmissionName string         `json:"submission_name,omitempty"`
+	Result         map[string]any `json:"result,omitempty"`
+	WorkerID       string         `json:"worker_id,omitempty"`
+	ClaimedAt      *time.Time     `json:"claimed_at,omitempty"`
+	Stdout         string         `json:"stdout,omitempty"`
+	Stderr         string         `json:"stderr,omitempty"`
 }
 
 // LeaderboardEntry is one row in GET /api/suites/{id}/leaderboard.

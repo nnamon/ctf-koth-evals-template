@@ -46,7 +46,7 @@ func init() {
 	// run.DefaultPriority holds the default value on creation for the priority field.
 	run.DefaultPriority = runDescPriority.Default.(int64)
 	// runDescCreatedAt is the schema descriptor for created_at field.
-	runDescCreatedAt := runFields[10].Descriptor()
+	runDescCreatedAt := runFields[12].Descriptor()
 	// run.DefaultCreatedAt holds the default value on creation for the created_at field.
 	run.DefaultCreatedAt = runDescCreatedAt.Default.(func() time.Time)
 	submissionFields := schema.Submission{}.Fields()

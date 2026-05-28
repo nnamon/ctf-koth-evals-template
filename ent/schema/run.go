@@ -27,6 +27,10 @@ func (Run) Fields() []ent.Field {
 		field.Float("score").Optional().Nillable(),
 		field.JSON("result", map[string]any{}).Optional(),
 		field.String("error").Optional(),
+		// Tail of the wrapper subprocess output (capped worker-side). Full
+		// output also lands in logs/ in the run's working directory.
+		field.Text("stdout").Optional(),
+		field.Text("stderr").Optional(),
 		field.String("worker_id").Optional(),
 		field.Time("claimed_at").Optional().Nillable(),
 		field.Time("started_at").Optional().Nillable(),

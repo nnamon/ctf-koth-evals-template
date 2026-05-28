@@ -92,6 +92,34 @@ func (_c *RunCreate) SetNillableError(v *string) *RunCreate {
 	return _c
 }
 
+// SetStdout sets the "stdout" field.
+func (_c *RunCreate) SetStdout(v string) *RunCreate {
+	_c.mutation.SetStdout(v)
+	return _c
+}
+
+// SetNillableStdout sets the "stdout" field if the given value is not nil.
+func (_c *RunCreate) SetNillableStdout(v *string) *RunCreate {
+	if v != nil {
+		_c.SetStdout(*v)
+	}
+	return _c
+}
+
+// SetStderr sets the "stderr" field.
+func (_c *RunCreate) SetStderr(v string) *RunCreate {
+	_c.mutation.SetStderr(v)
+	return _c
+}
+
+// SetNillableStderr sets the "stderr" field if the given value is not nil.
+func (_c *RunCreate) SetNillableStderr(v *string) *RunCreate {
+	if v != nil {
+		_c.SetStderr(*v)
+	}
+	return _c
+}
+
 // SetWorkerID sets the "worker_id" field.
 func (_c *RunCreate) SetWorkerID(v string) *RunCreate {
 	_c.mutation.SetWorkerID(v)
@@ -314,6 +342,14 @@ func (_c *RunCreate) createSpec() (*Run, *sqlgraph.CreateSpec) {
 		_spec.SetField(run.FieldError, field.TypeString, value)
 		_node.Error = value
 	}
+	if value, ok := _c.mutation.Stdout(); ok {
+		_spec.SetField(run.FieldStdout, field.TypeString, value)
+		_node.Stdout = value
+	}
+	if value, ok := _c.mutation.Stderr(); ok {
+		_spec.SetField(run.FieldStderr, field.TypeString, value)
+		_node.Stderr = value
+	}
 	if value, ok := _c.mutation.WorkerID(); ok {
 		_spec.SetField(run.FieldWorkerID, field.TypeString, value)
 		_node.WorkerID = value
@@ -519,6 +555,42 @@ func (u *RunUpsert) UpdateError() *RunUpsert {
 // ClearError clears the value of the "error" field.
 func (u *RunUpsert) ClearError() *RunUpsert {
 	u.SetNull(run.FieldError)
+	return u
+}
+
+// SetStdout sets the "stdout" field.
+func (u *RunUpsert) SetStdout(v string) *RunUpsert {
+	u.Set(run.FieldStdout, v)
+	return u
+}
+
+// UpdateStdout sets the "stdout" field to the value that was provided on create.
+func (u *RunUpsert) UpdateStdout() *RunUpsert {
+	u.SetExcluded(run.FieldStdout)
+	return u
+}
+
+// ClearStdout clears the value of the "stdout" field.
+func (u *RunUpsert) ClearStdout() *RunUpsert {
+	u.SetNull(run.FieldStdout)
+	return u
+}
+
+// SetStderr sets the "stderr" field.
+func (u *RunUpsert) SetStderr(v string) *RunUpsert {
+	u.Set(run.FieldStderr, v)
+	return u
+}
+
+// UpdateStderr sets the "stderr" field to the value that was provided on create.
+func (u *RunUpsert) UpdateStderr() *RunUpsert {
+	u.SetExcluded(run.FieldStderr)
+	return u
+}
+
+// ClearStderr clears the value of the "stderr" field.
+func (u *RunUpsert) ClearStderr() *RunUpsert {
+	u.SetNull(run.FieldStderr)
 	return u
 }
 
@@ -755,6 +827,48 @@ func (u *RunUpsertOne) UpdateError() *RunUpsertOne {
 func (u *RunUpsertOne) ClearError() *RunUpsertOne {
 	return u.Update(func(s *RunUpsert) {
 		s.ClearError()
+	})
+}
+
+// SetStdout sets the "stdout" field.
+func (u *RunUpsertOne) SetStdout(v string) *RunUpsertOne {
+	return u.Update(func(s *RunUpsert) {
+		s.SetStdout(v)
+	})
+}
+
+// UpdateStdout sets the "stdout" field to the value that was provided on create.
+func (u *RunUpsertOne) UpdateStdout() *RunUpsertOne {
+	return u.Update(func(s *RunUpsert) {
+		s.UpdateStdout()
+	})
+}
+
+// ClearStdout clears the value of the "stdout" field.
+func (u *RunUpsertOne) ClearStdout() *RunUpsertOne {
+	return u.Update(func(s *RunUpsert) {
+		s.ClearStdout()
+	})
+}
+
+// SetStderr sets the "stderr" field.
+func (u *RunUpsertOne) SetStderr(v string) *RunUpsertOne {
+	return u.Update(func(s *RunUpsert) {
+		s.SetStderr(v)
+	})
+}
+
+// UpdateStderr sets the "stderr" field to the value that was provided on create.
+func (u *RunUpsertOne) UpdateStderr() *RunUpsertOne {
+	return u.Update(func(s *RunUpsert) {
+		s.UpdateStderr()
+	})
+}
+
+// ClearStderr clears the value of the "stderr" field.
+func (u *RunUpsertOne) ClearStderr() *RunUpsertOne {
+	return u.Update(func(s *RunUpsert) {
+		s.ClearStderr()
 	})
 }
 
@@ -1169,6 +1283,48 @@ func (u *RunUpsertBulk) UpdateError() *RunUpsertBulk {
 func (u *RunUpsertBulk) ClearError() *RunUpsertBulk {
 	return u.Update(func(s *RunUpsert) {
 		s.ClearError()
+	})
+}
+
+// SetStdout sets the "stdout" field.
+func (u *RunUpsertBulk) SetStdout(v string) *RunUpsertBulk {
+	return u.Update(func(s *RunUpsert) {
+		s.SetStdout(v)
+	})
+}
+
+// UpdateStdout sets the "stdout" field to the value that was provided on create.
+func (u *RunUpsertBulk) UpdateStdout() *RunUpsertBulk {
+	return u.Update(func(s *RunUpsert) {
+		s.UpdateStdout()
+	})
+}
+
+// ClearStdout clears the value of the "stdout" field.
+func (u *RunUpsertBulk) ClearStdout() *RunUpsertBulk {
+	return u.Update(func(s *RunUpsert) {
+		s.ClearStdout()
+	})
+}
+
+// SetStderr sets the "stderr" field.
+func (u *RunUpsertBulk) SetStderr(v string) *RunUpsertBulk {
+	return u.Update(func(s *RunUpsert) {
+		s.SetStderr(v)
+	})
+}
+
+// UpdateStderr sets the "stderr" field to the value that was provided on create.
+func (u *RunUpsertBulk) UpdateStderr() *RunUpsertBulk {
+	return u.Update(func(s *RunUpsert) {
+		s.UpdateStderr()
+	})
+}
+
+// ClearStderr clears the value of the "stderr" field.
+func (u *RunUpsertBulk) ClearStderr() *RunUpsertBulk {
+	return u.Update(func(s *RunUpsert) {
+		s.ClearStderr()
 	})
 }
 

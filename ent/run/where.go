@@ -75,6 +75,16 @@ func Error(v string) predicate.Run {
 	return predicate.Run(sql.FieldEQ(FieldError, v))
 }
 
+// Stdout applies equality check predicate on the "stdout" field. It's identical to StdoutEQ.
+func Stdout(v string) predicate.Run {
+	return predicate.Run(sql.FieldEQ(FieldStdout, v))
+}
+
+// Stderr applies equality check predicate on the "stderr" field. It's identical to StderrEQ.
+func Stderr(v string) predicate.Run {
+	return predicate.Run(sql.FieldEQ(FieldStderr, v))
+}
+
 // WorkerID applies equality check predicate on the "worker_id" field. It's identical to WorkerIDEQ.
 func WorkerID(v string) predicate.Run {
 	return predicate.Run(sql.FieldEQ(FieldWorkerID, v))
@@ -358,6 +368,156 @@ func ErrorEqualFold(v string) predicate.Run {
 // ErrorContainsFold applies the ContainsFold predicate on the "error" field.
 func ErrorContainsFold(v string) predicate.Run {
 	return predicate.Run(sql.FieldContainsFold(FieldError, v))
+}
+
+// StdoutEQ applies the EQ predicate on the "stdout" field.
+func StdoutEQ(v string) predicate.Run {
+	return predicate.Run(sql.FieldEQ(FieldStdout, v))
+}
+
+// StdoutNEQ applies the NEQ predicate on the "stdout" field.
+func StdoutNEQ(v string) predicate.Run {
+	return predicate.Run(sql.FieldNEQ(FieldStdout, v))
+}
+
+// StdoutIn applies the In predicate on the "stdout" field.
+func StdoutIn(vs ...string) predicate.Run {
+	return predicate.Run(sql.FieldIn(FieldStdout, vs...))
+}
+
+// StdoutNotIn applies the NotIn predicate on the "stdout" field.
+func StdoutNotIn(vs ...string) predicate.Run {
+	return predicate.Run(sql.FieldNotIn(FieldStdout, vs...))
+}
+
+// StdoutGT applies the GT predicate on the "stdout" field.
+func StdoutGT(v string) predicate.Run {
+	return predicate.Run(sql.FieldGT(FieldStdout, v))
+}
+
+// StdoutGTE applies the GTE predicate on the "stdout" field.
+func StdoutGTE(v string) predicate.Run {
+	return predicate.Run(sql.FieldGTE(FieldStdout, v))
+}
+
+// StdoutLT applies the LT predicate on the "stdout" field.
+func StdoutLT(v string) predicate.Run {
+	return predicate.Run(sql.FieldLT(FieldStdout, v))
+}
+
+// StdoutLTE applies the LTE predicate on the "stdout" field.
+func StdoutLTE(v string) predicate.Run {
+	return predicate.Run(sql.FieldLTE(FieldStdout, v))
+}
+
+// StdoutContains applies the Contains predicate on the "stdout" field.
+func StdoutContains(v string) predicate.Run {
+	return predicate.Run(sql.FieldContains(FieldStdout, v))
+}
+
+// StdoutHasPrefix applies the HasPrefix predicate on the "stdout" field.
+func StdoutHasPrefix(v string) predicate.Run {
+	return predicate.Run(sql.FieldHasPrefix(FieldStdout, v))
+}
+
+// StdoutHasSuffix applies the HasSuffix predicate on the "stdout" field.
+func StdoutHasSuffix(v string) predicate.Run {
+	return predicate.Run(sql.FieldHasSuffix(FieldStdout, v))
+}
+
+// StdoutIsNil applies the IsNil predicate on the "stdout" field.
+func StdoutIsNil() predicate.Run {
+	return predicate.Run(sql.FieldIsNull(FieldStdout))
+}
+
+// StdoutNotNil applies the NotNil predicate on the "stdout" field.
+func StdoutNotNil() predicate.Run {
+	return predicate.Run(sql.FieldNotNull(FieldStdout))
+}
+
+// StdoutEqualFold applies the EqualFold predicate on the "stdout" field.
+func StdoutEqualFold(v string) predicate.Run {
+	return predicate.Run(sql.FieldEqualFold(FieldStdout, v))
+}
+
+// StdoutContainsFold applies the ContainsFold predicate on the "stdout" field.
+func StdoutContainsFold(v string) predicate.Run {
+	return predicate.Run(sql.FieldContainsFold(FieldStdout, v))
+}
+
+// StderrEQ applies the EQ predicate on the "stderr" field.
+func StderrEQ(v string) predicate.Run {
+	return predicate.Run(sql.FieldEQ(FieldStderr, v))
+}
+
+// StderrNEQ applies the NEQ predicate on the "stderr" field.
+func StderrNEQ(v string) predicate.Run {
+	return predicate.Run(sql.FieldNEQ(FieldStderr, v))
+}
+
+// StderrIn applies the In predicate on the "stderr" field.
+func StderrIn(vs ...string) predicate.Run {
+	return predicate.Run(sql.FieldIn(FieldStderr, vs...))
+}
+
+// StderrNotIn applies the NotIn predicate on the "stderr" field.
+func StderrNotIn(vs ...string) predicate.Run {
+	return predicate.Run(sql.FieldNotIn(FieldStderr, vs...))
+}
+
+// StderrGT applies the GT predicate on the "stderr" field.
+func StderrGT(v string) predicate.Run {
+	return predicate.Run(sql.FieldGT(FieldStderr, v))
+}
+
+// StderrGTE applies the GTE predicate on the "stderr" field.
+func StderrGTE(v string) predicate.Run {
+	return predicate.Run(sql.FieldGTE(FieldStderr, v))
+}
+
+// StderrLT applies the LT predicate on the "stderr" field.
+func StderrLT(v string) predicate.Run {
+	return predicate.Run(sql.FieldLT(FieldStderr, v))
+}
+
+// StderrLTE applies the LTE predicate on the "stderr" field.
+func StderrLTE(v string) predicate.Run {
+	return predicate.Run(sql.FieldLTE(FieldStderr, v))
+}
+
+// StderrContains applies the Contains predicate on the "stderr" field.
+func StderrContains(v string) predicate.Run {
+	return predicate.Run(sql.FieldContains(FieldStderr, v))
+}
+
+// StderrHasPrefix applies the HasPrefix predicate on the "stderr" field.
+func StderrHasPrefix(v string) predicate.Run {
+	return predicate.Run(sql.FieldHasPrefix(FieldStderr, v))
+}
+
+// StderrHasSuffix applies the HasSuffix predicate on the "stderr" field.
+func StderrHasSuffix(v string) predicate.Run {
+	return predicate.Run(sql.FieldHasSuffix(FieldStderr, v))
+}
+
+// StderrIsNil applies the IsNil predicate on the "stderr" field.
+func StderrIsNil() predicate.Run {
+	return predicate.Run(sql.FieldIsNull(FieldStderr))
+}
+
+// StderrNotNil applies the NotNil predicate on the "stderr" field.
+func StderrNotNil() predicate.Run {
+	return predicate.Run(sql.FieldNotNull(FieldStderr))
+}
+
+// StderrEqualFold applies the EqualFold predicate on the "stderr" field.
+func StderrEqualFold(v string) predicate.Run {
+	return predicate.Run(sql.FieldEqualFold(FieldStderr, v))
+}
+
+// StderrContainsFold applies the ContainsFold predicate on the "stderr" field.
+func StderrContainsFold(v string) predicate.Run {
+	return predicate.Run(sql.FieldContainsFold(FieldStderr, v))
 }
 
 // WorkerIDEQ applies the EQ predicate on the "worker_id" field.

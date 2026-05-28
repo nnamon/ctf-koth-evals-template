@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "../components/PageHeader";
 import { Alert } from "../components/Alert";
 import { Leaderboard } from "../components/Leaderboard";
@@ -9,10 +9,24 @@ import type { LeaderboardEntry, Suite } from "../api/types";
 export function SuiteDetail() {
   const params = useParams();
   const id = Number(params.id);
+  const navigate = useNavigate();
 
   const [suite, setSuite] = useState<Suite | null>(null);
   const [board, setBoard] = useState<LeaderboardEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [cloning, setCloning] = useState(false);
+
+  const onClone = async () => {
+    setCloning(true);
+    try {
+      const created = await api.cloneSuite(id);
+      navigate(`/suites/${created.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setCloning(false);
+    }
+  };
 
   const refresh = useCallback(async () => {
     try {
@@ -53,6 +67,15 @@ export function SuiteDetail() {
           <>
             <div className="page-header">
               <h1>{suite.name}</h1>
+              <button
+                type="button"
+                className="btn secondary"
+                onClick={onClone}
+                disabled={cloning}
+                title="Copy this suite into a new editable one (same challenge + seeds)"
+              >
+                {cloning ? "Cloning…" : "Clone"}
+              </button>
               <Link to={`/submit?suite=${id}`} className="btn">
                 Submit
               </Link>

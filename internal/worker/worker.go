@@ -123,25 +123,45 @@ func execute(ctx context.Context, client *workerclient.Client, cfg config.Config
 
 	cmd := exec.CommandContext(runCtx, wrapper, "--workdir="+workdir)
 	cmd.Env = append(os.Environ(), parametersToEnv(claim.Suite.Parameters)...)
-	cmd.Stdout = io.Discard
-	cmd.Stderr = io.Discard
+
+	// Tee the subprocess streams: full output to logs/ in the workdir,
+	// last-N-bytes tail to in-memory buffers that ride back in the result.
+	stdoutTail := &tailWriter{limit: logTailLimit}
+	stderrTail := &tailWriter{limit: logTailLimit}
+	outWriters := []io.Writer{stdoutTail}
+	errWriters := []io.Writer{stderrTail}
+	if f, err := os.Create(filepath.Join(workdir, "logs", "stdout.log")); err == nil {
+		defer f.Close()
+		outWriters = append(outWriters, f)
+	}
+	if f, err := os.Create(filepath.Join(workdir, "logs", "stderr.log")); err == nil {
+		defer f.Close()
+		errWriters = append(errWriters, f)
+	}
+	cmd.Stdout = io.MultiWriter(outWriters...)
+	cmd.Stderr = io.MultiWriter(errWriters...)
+
 	startedAt := time.Now()
 	runErr := cmd.Run()
+	stdout := stdoutTail.String()
+	stderr := stderrTail.String()
 
 	if errors.Is(runCtx.Err(), context.DeadlineExceeded) {
 		return client.ReportResult(ctx, claim.ID, wireapi.ResultRequest{
 			Status:    "timed_out",
 			Error:     "wrapper exceeded suite timeout",
 			StartedAt: &startedAt,
+			Stdout:    stdout,
+			Stderr:    stderr,
 		})
 	}
 	if runErr != nil {
-		return reportFailure(ctx, client, claim.ID, fmt.Errorf("wrapper: %w", runErr), &startedAt)
+		return reportFailureLogs(ctx, client, claim.ID, fmt.Errorf("wrapper: %w", runErr), &startedAt, stdout, stderr)
 	}
 
 	result, score, err := readResult(filepath.Join(workdir, "result.json"))
 	if err != nil {
-		return reportFailure(ctx, client, claim.ID, fmt.Errorf("read result: %w", err), &startedAt)
+		return reportFailureLogs(ctx, client, claim.ID, fmt.Errorf("read result: %w", err), &startedAt, stdout, stderr)
 	}
 
 	return client.ReportResult(ctx, claim.ID, wireapi.ResultRequest{
@@ -149,8 +169,29 @@ func execute(ctx context.Context, client *workerclient.Client, cfg config.Config
 		Score:     &score,
 		Result:    result,
 		StartedAt: &startedAt,
+		Stdout:    stdout,
+		Stderr:    stderr,
 	})
 }
+
+const logTailLimit = 32 * 1024 // bytes of stdout/stderr tail kept per run
+
+// tailWriter keeps only the last `limit` bytes written — the tail of a
+// stream, which is where errors usually surface.
+type tailWriter struct {
+	buf   []byte
+	limit int
+}
+
+func (t *tailWriter) Write(p []byte) (int, error) {
+	t.buf = append(t.buf, p...)
+	if len(t.buf) > t.limit {
+		t.buf = t.buf[len(t.buf)-t.limit:]
+	}
+	return len(p), nil
+}
+
+func (t *tailWriter) String() string { return string(t.buf) }
 
 // ensureBundle returns the directory where the challenge bundle is
 // extracted, fetching it from the server on cache miss.
@@ -271,6 +312,17 @@ func reportFailure(ctx context.Context, client *workerclient.Client, runID int, 
 		Status:    "failed",
 		Error:     cause.Error(),
 		StartedAt: startedAt,
+	})
+	return cause
+}
+
+func reportFailureLogs(ctx context.Context, client *workerclient.Client, runID int, cause error, startedAt *time.Time, stdout, stderr string) error {
+	_ = client.ReportResult(ctx, runID, wireapi.ResultRequest{
+		Status:    "failed",
+		Error:     cause.Error(),
+		StartedAt: startedAt,
+		Stdout:    stdout,
+		Stderr:    stderr,
 	})
 	return cause
 }

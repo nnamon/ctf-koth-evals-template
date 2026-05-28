@@ -7,6 +7,7 @@ import { SuiteDetail } from "./pages/SuiteDetail";
 import { Submit } from "./pages/Submit";
 import { Submissions } from "./pages/Submissions";
 import { SubmissionDetail } from "./pages/SubmissionDetail";
+import { RunDetail } from "./pages/RunDetail";
 
 function App() {
   const auth = useAuthValue();
@@ -60,6 +61,14 @@ function App() {
             element={
               <RequireAuth>
                 <SubmissionDetail />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/runs/:id"
+            element={
+              <RequireAuth>
+                <RunDetail />
               </RequireAuth>
             }
           />

@@ -14,7 +14,7 @@ export function NewSuite() {
   const [description, setDescription] = useState("");
   const [challengeId, setChallengeId] = useState<number | null>(null);
   const [seedsText, setSeedsText] = useState("");
-  const [timeoutSecs, setTimeoutSecs] = useState(60);
+  const [timeoutSecs, setTimeoutSecs] = useState(3600);
   const [parametersText, setParametersText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);

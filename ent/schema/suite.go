@@ -19,7 +19,7 @@ func (Suite) Fields() []ent.Field {
 		field.String("description").Optional(),
 		field.JSON("parameters", map[string]any{}).Optional(),
 		field.JSON("seeds", []string{}),
-		field.Int("timeout_seconds").Positive().Default(60),
+		field.Int("timeout_seconds").Positive().Default(3600),
 		field.JSON("scoring", map[string]any{}).Optional(),
 		field.Bool("sealed").Default(false),
 		field.Time("created_at").Default(time.Now).Immutable(),

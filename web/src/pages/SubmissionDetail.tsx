@@ -4,7 +4,7 @@ import { PageHeader } from "../components/PageHeader";
 import { Alert } from "../components/Alert";
 import { SuiteBreakdown } from "../components/SuiteBreakdown";
 import { api } from "../api/client";
-import type { RunSummary, SubmissionDetail as Detail } from "../api/types";
+import type { RunSummary, Suite, SubmissionDetail as Detail } from "../api/types";
 
 export function SubmissionDetail() {
   const { id } = useParams();
@@ -74,6 +74,8 @@ export function SubmissionDetail() {
                 </code>
               </p>
 
+              <Reevaluate submissionId={subId} onDone={refresh} />
+
               <BySuite runs={detail.runs} />
 
               <h2 style={{ marginTop: "var(--space-7)" }}>
@@ -92,6 +94,82 @@ export function SubmissionDetail() {
           )}
       </main>
     </div>
+  );
+}
+
+function Reevaluate({
+  submissionId,
+  onDone,
+}: {
+  submissionId: number;
+  onDone: () => void;
+}) {
+  const [suites, setSuites] = useState<Suite[]>([]);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.listSuites().then(setSuites).catch(() => {});
+  }, []);
+
+  const toggle = (id: number) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
+  const onSubmit = async () => {
+    if (selected.size === 0) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await api.reevaluateSubmission(submissionId, Array.from(selected));
+      setMsg(`Queued ${r.runs_created} runs.`);
+      setSelected(new Set());
+      onDone();
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (suites.length === 0) return null;
+
+  return (
+    <details style={{ marginTop: "var(--space-5)" }}>
+      <summary style={{ cursor: "pointer", fontFamily: "var(--mono)", fontSize: 13 }}>
+        re-evaluate against another suite
+      </summary>
+      <div style={{ marginTop: "var(--space-3)", display: "grid", gap: "var(--space-2)", maxWidth: 520 }}>
+        {suites.map((s) => (
+          <label key={s.id} style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: 13 }}>
+            <input
+              type="checkbox"
+              checked={selected.has(s.id)}
+              onChange={() => toggle(s.id)}
+            />
+            {s.name}{" "}
+            <code className="t-cmt">
+              {s.challenge.name} · {s.seeds.length} seeds
+            </code>
+          </label>
+        ))}
+        <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "center", marginTop: "var(--space-2)" }}>
+          <button
+            type="button"
+            className="btn"
+            onClick={onSubmit}
+            disabled={busy || selected.size === 0}
+          >
+            {busy ? "Queuing…" : "Re-evaluate"}
+          </button>
+          {msg && <code className="t-cmt">{msg}</code>}
+        </div>
+      </div>
+    </details>
   );
 }
 
@@ -148,7 +226,9 @@ function RunsTable({ runs }: { runs: Detail["runs"] }) {
           {runs.map((r) => (
             <tr key={r.id}>
               <td>
-                <code className="t-num">{r.id}</code>
+                <Link to={`/runs/${r.id}`}>
+                  <code className="t-num">{r.id}</code>
+                </Link>
               </td>
               <td>
                 <code className="t-path">{r.seed}</code>

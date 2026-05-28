@@ -75,6 +75,13 @@ export const api = {
     request<{ retried: number }>(`/api/submissions/${id}/retry`, { method: "POST" }),
   prioritizeSubmission: (id: number) =>
     request<{ prioritized: number }>(`/api/submissions/${id}/prioritize`, { method: "POST" }),
+  reevaluateSubmission: (id: number, suiteIds: number[]) =>
+    request<{ runs_created: number }>(`/api/submissions/${id}/reevaluate`, {
+      method: "POST",
+      json: { suite_ids: suiteIds },
+    }),
+  cloneSuite: (id: number) =>
+    request<Suite>(`/api/suites/${id}/clone`, { method: "POST" }),
   uploadSubmission: async (
     suiteIds: number[],
     name: string,

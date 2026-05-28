@@ -39,4 +39,6 @@ type ResultRequest struct {
 	Result    map[string]any `json:"result,omitempty"`
 	Error     string         `json:"error,omitempty"`
 	StartedAt *time.Time     `json:"started_at,omitempty"`
+	Stdout    string         `json:"stdout,omitempty"`
+	Stderr    string         `json:"stderr,omitempty"`
 }

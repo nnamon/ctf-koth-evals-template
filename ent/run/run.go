@@ -27,6 +27,10 @@ const (
 	FieldResult = "result"
 	// FieldError holds the string denoting the error field in the database.
 	FieldError = "error"
+	// FieldStdout holds the string denoting the stdout field in the database.
+	FieldStdout = "stdout"
+	// FieldStderr holds the string denoting the stderr field in the database.
+	FieldStderr = "stderr"
 	// FieldWorkerID holds the string denoting the worker_id field in the database.
 	FieldWorkerID = "worker_id"
 	// FieldClaimedAt holds the string denoting the claimed_at field in the database.
@@ -68,6 +72,8 @@ var Columns = []string{
 	FieldScore,
 	FieldResult,
 	FieldError,
+	FieldStdout,
+	FieldStderr,
 	FieldWorkerID,
 	FieldClaimedAt,
 	FieldStartedAt,
@@ -168,6 +174,16 @@ func ByScore(opts ...sql.OrderTermOption) OrderOption {
 // ByError orders the results by the error field.
 func ByError(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldError, opts...).ToFunc()
+}
+
+// ByStdout orders the results by the stdout field.
+func ByStdout(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStdout, opts...).ToFunc()
+}
+
+// ByStderr orders the results by the stderr field.
+func ByStderr(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStderr, opts...).ToFunc()
 }
 
 // ByWorkerID orders the results by the worker_id field.

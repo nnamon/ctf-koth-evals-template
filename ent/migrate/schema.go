@@ -46,6 +46,8 @@ var (
 		{Name: "score", Type: field.TypeFloat64, Nullable: true},
 		{Name: "result", Type: field.TypeJSON, Nullable: true},
 		{Name: "error", Type: field.TypeString, Nullable: true},
+		{Name: "stdout", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "stderr", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "worker_id", Type: field.TypeString, Nullable: true},
 		{Name: "claimed_at", Type: field.TypeTime, Nullable: true},
 		{Name: "started_at", Type: field.TypeTime, Nullable: true},
@@ -62,13 +64,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "runs_submissions_runs",
-				Columns:    []*schema.Column{RunsColumns[12]},
+				Columns:    []*schema.Column{RunsColumns[14]},
 				RefColumns: []*schema.Column{SubmissionsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "runs_suites_runs",
-				Columns:    []*schema.Column{RunsColumns[13]},
+				Columns:    []*schema.Column{RunsColumns[15]},
 				RefColumns: []*schema.Column{SuitesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -77,7 +79,7 @@ var (
 			{
 				Name:    "run_status_claimed_at",
 				Unique:  false,
-				Columns: []*schema.Column{RunsColumns[2], RunsColumns[8]},
+				Columns: []*schema.Column{RunsColumns[2], RunsColumns[10]},
 			},
 		},
 	}
@@ -104,7 +106,7 @@ var (
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "parameters", Type: field.TypeJSON, Nullable: true},
 		{Name: "seeds", Type: field.TypeJSON},
-		{Name: "timeout_seconds", Type: field.TypeInt, Default: 60},
+		{Name: "timeout_seconds", Type: field.TypeInt, Default: 3600},
 		{Name: "scoring", Type: field.TypeJSON, Nullable: true},
 		{Name: "sealed", Type: field.TypeBool, Default: false},
 		{Name: "created_at", Type: field.TypeTime},

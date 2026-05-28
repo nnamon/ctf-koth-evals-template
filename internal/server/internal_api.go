@@ -181,6 +181,12 @@ func (s *Deps) handleResult(w http.ResponseWriter, req *http.Request) {
 	if body.StartedAt != nil {
 		upd = upd.SetStartedAt(*body.StartedAt)
 	}
+	if body.Stdout != "" {
+		upd = upd.SetStdout(body.Stdout)
+	}
+	if body.Stderr != "" {
+		upd = upd.SetStderr(body.Stderr)
+	}
 
 	if _, err := upd.Save(req.Context()); err != nil {
 		if ent.IsNotFound(err) {

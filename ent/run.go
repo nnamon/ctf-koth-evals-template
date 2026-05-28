@@ -32,6 +32,10 @@ type Run struct {
 	Result map[string]interface{} `json:"result,omitempty"`
 	// Error holds the value of the "error" field.
 	Error string `json:"error,omitempty"`
+	// Stdout holds the value of the "stdout" field.
+	Stdout string `json:"stdout,omitempty"`
+	// Stderr holds the value of the "stderr" field.
+	Stderr string `json:"stderr,omitempty"`
 	// WorkerID holds the value of the "worker_id" field.
 	WorkerID string `json:"worker_id,omitempty"`
 	// ClaimedAt holds the value of the "claimed_at" field.
@@ -94,7 +98,7 @@ func (*Run) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case run.FieldID, run.FieldPriority:
 			values[i] = new(sql.NullInt64)
-		case run.FieldSeed, run.FieldStatus, run.FieldError, run.FieldWorkerID:
+		case run.FieldSeed, run.FieldStatus, run.FieldError, run.FieldStdout, run.FieldStderr, run.FieldWorkerID:
 			values[i] = new(sql.NullString)
 		case run.FieldClaimedAt, run.FieldStartedAt, run.FieldFinishedAt, run.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -161,6 +165,18 @@ func (_m *Run) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field error", values[i])
 			} else if value.Valid {
 				_m.Error = value.String
+			}
+		case run.FieldStdout:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field stdout", values[i])
+			} else if value.Valid {
+				_m.Stdout = value.String
+			}
+		case run.FieldStderr:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field stderr", values[i])
+			} else if value.Valid {
+				_m.Stderr = value.String
 			}
 		case run.FieldWorkerID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -274,6 +290,12 @@ func (_m *Run) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("error=")
 	builder.WriteString(_m.Error)
+	builder.WriteString(", ")
+	builder.WriteString("stdout=")
+	builder.WriteString(_m.Stdout)
+	builder.WriteString(", ")
+	builder.WriteString("stderr=")
+	builder.WriteString(_m.Stderr)
 	builder.WriteString(", ")
 	builder.WriteString("worker_id=")
 	builder.WriteString(_m.WorkerID)

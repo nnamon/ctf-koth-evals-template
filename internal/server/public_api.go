@@ -35,6 +35,7 @@ func (s *Deps) mountPublic(api chi.Router) {
 	api.Get("/suites", s.listSuites)
 	api.Post("/suites", s.createSuite)
 	api.Get("/suites/{id}", s.getSuite)
+	api.Post("/suites/{id}/clone", s.cloneSuite)
 	api.Get("/suites/{id}/leaderboard", s.getLeaderboard)
 
 	api.Get("/submissions", s.listSubmissions)
@@ -43,6 +44,7 @@ func (s *Deps) mountPublic(api chi.Router) {
 	api.Post("/submissions/{id}/cancel", s.cancelSubmission)
 	api.Post("/submissions/{id}/retry", s.retrySubmission)
 	api.Post("/submissions/{id}/prioritize", s.prioritizeSubmission)
+	api.Post("/submissions/{id}/reevaluate", s.reevaluateSubmission)
 
 	api.Get("/runs/{id}", s.getRun)
 
@@ -122,7 +124,7 @@ func (s *Deps) createSuite(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if body.TimeoutSeconds == 0 {
-		body.TimeoutSeconds = 60
+		body.TimeoutSeconds = 3600
 	}
 
 	ch, err := s.Client.Challenge.Get(req.Context(), body.ChallengeID)
@@ -175,6 +177,49 @@ func (s *Deps) getSuite(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, suiteDetail(r))
+}
+
+// cloneSuite copies a suite into a new, unsealed suite — same challenge,
+// seeds, parameters, timeout, scoring. The clone records its parent via the
+// self-edge for lineage. This is the supported way to "edit" a sealed suite.
+func (s *Deps) cloneSuite(w http.ResponseWriter, req *http.Request) {
+	id, ok := pathID(w, req, "id")
+	if !ok {
+		return
+	}
+	src, err := s.Client.Suite.Query().
+		Where(suite.IDEQ(id)).
+		WithChallenge().
+		Only(req.Context())
+	if err != nil {
+		if ent.IsNotFound(err) {
+			http.NotFound(w, req)
+			return
+		}
+		httpError(w, http.StatusInternalServerError, "load suite: %v", err)
+		return
+	}
+
+	create := s.Client.Suite.Create().
+		SetName(src.Name + " (copy)").
+		SetDescription(src.Description).
+		SetChallengeID(src.Edges.Challenge.ID).
+		SetSeeds(src.Seeds).
+		SetTimeoutSeconds(src.TimeoutSeconds).
+		SetParentID(src.ID)
+	if src.Parameters != nil {
+		create = create.SetParameters(src.Parameters)
+	}
+	if src.Scoring != nil {
+		create = create.SetScoring(src.Scoring)
+	}
+	created, err := create.Save(req.Context())
+	if err != nil {
+		httpError(w, http.StatusInternalServerError, "clone: %v", err)
+		return
+	}
+	created.Edges.Challenge = src.Edges.Challenge
+	writeJSON(w, http.StatusCreated, suiteDetail(created))
 }
 
 func suiteDetail(r *ent.Suite) wireapi.SuiteDetail {
@@ -535,6 +580,89 @@ func (s *Deps) prioritizeSubmission(w http.ResponseWriter, req *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]int{"prioritized": n})
 }
 
+// reevaluateSubmission fans out fresh pending runs for an existing
+// submission against one or more suites — used to run an artifact against a
+// new phase (or re-run it against the same suite to gather more samples).
+func (s *Deps) reevaluateSubmission(w http.ResponseWriter, req *http.Request) {
+	id, ok := pathID(w, req, "id")
+	if !ok {
+		return
+	}
+	var body struct {
+		SuiteIDs []int `json:"suite_ids"`
+	}
+	if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+		http.Error(w, "bad json: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	if len(body.SuiteIDs) == 0 {
+		http.Error(w, "suite_ids must be non-empty", http.StatusBadRequest)
+		return
+	}
+
+	ctx := req.Context()
+	sub, err := s.Client.Submission.Get(ctx, id)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			http.NotFound(w, req)
+			return
+		}
+		httpError(w, http.StatusInternalServerError, "load submission: %v", err)
+		return
+	}
+	suites, err := s.Client.Suite.Query().Where(suite.IDIn(body.SuiteIDs...)).All(ctx)
+	if err != nil {
+		httpError(w, http.StatusInternalServerError, "load suites: %v", err)
+		return
+	}
+	if len(suites) != len(body.SuiteIDs) {
+		http.Error(w, "one or more suite_ids do not exist", http.StatusBadRequest)
+		return
+	}
+
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+
+	tx, err := s.Client.Tx(ctx)
+	if err != nil {
+		httpError(w, http.StatusInternalServerError, "begin tx: %v", err)
+		return
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback()
+		}
+	}()
+
+	created := 0
+	for _, su := range suites {
+		for _, seed := range su.Seeds {
+			if _, err := tx.Run.Create().
+				SetSeed(seed).
+				SetSuite(su).
+				SetSubmission(sub).
+				Save(ctx); err != nil {
+				httpError(w, http.StatusInternalServerError, "create run: %v", err)
+				return
+			}
+			created++
+		}
+		if !su.Sealed {
+			if _, err := tx.Suite.UpdateOneID(su.ID).SetSealed(true).Save(ctx); err != nil {
+				httpError(w, http.StatusInternalServerError, "seal suite: %v", err)
+				return
+			}
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		httpError(w, http.StatusInternalServerError, "commit: %v", err)
+		return
+	}
+	committed = true
+	writeJSON(w, http.StatusOK, map[string]int{"runs_created": created})
+}
+
 func submissionSummary(r *ent.Submission) wireapi.SubmissionSummary {
 	return wireapi.SubmissionSummary{
 		ID:           r.ID,
@@ -582,9 +710,12 @@ func (s *Deps) getRun(w http.ResponseWriter, req *http.Request) {
 		Result:     r.Result,
 		WorkerID:   r.WorkerID,
 		ClaimedAt:  r.ClaimedAt,
+		Stdout:     r.Stdout,
+		Stderr:     r.Stderr,
 	}
 	if r.Edges.Submission != nil {
 		d.SubmissionID = r.Edges.Submission.ID
+		d.SubmissionName = r.Edges.Submission.Name
 	}
 	writeJSON(w, http.StatusOK, d)
 }

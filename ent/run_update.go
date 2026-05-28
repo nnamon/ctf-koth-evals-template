@@ -138,6 +138,46 @@ func (_u *RunUpdate) ClearError() *RunUpdate {
 	return _u
 }
 
+// SetStdout sets the "stdout" field.
+func (_u *RunUpdate) SetStdout(v string) *RunUpdate {
+	_u.mutation.SetStdout(v)
+	return _u
+}
+
+// SetNillableStdout sets the "stdout" field if the given value is not nil.
+func (_u *RunUpdate) SetNillableStdout(v *string) *RunUpdate {
+	if v != nil {
+		_u.SetStdout(*v)
+	}
+	return _u
+}
+
+// ClearStdout clears the value of the "stdout" field.
+func (_u *RunUpdate) ClearStdout() *RunUpdate {
+	_u.mutation.ClearStdout()
+	return _u
+}
+
+// SetStderr sets the "stderr" field.
+func (_u *RunUpdate) SetStderr(v string) *RunUpdate {
+	_u.mutation.SetStderr(v)
+	return _u
+}
+
+// SetNillableStderr sets the "stderr" field if the given value is not nil.
+func (_u *RunUpdate) SetNillableStderr(v *string) *RunUpdate {
+	if v != nil {
+		_u.SetStderr(*v)
+	}
+	return _u
+}
+
+// ClearStderr clears the value of the "stderr" field.
+func (_u *RunUpdate) ClearStderr() *RunUpdate {
+	_u.mutation.ClearStderr()
+	return _u
+}
+
 // SetWorkerID sets the "worker_id" field.
 func (_u *RunUpdate) SetWorkerID(v string) *RunUpdate {
 	_u.mutation.SetWorkerID(v)
@@ -350,6 +390,18 @@ func (_u *RunUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.ErrorCleared() {
 		_spec.ClearField(run.FieldError, field.TypeString)
 	}
+	if value, ok := _u.mutation.Stdout(); ok {
+		_spec.SetField(run.FieldStdout, field.TypeString, value)
+	}
+	if _u.mutation.StdoutCleared() {
+		_spec.ClearField(run.FieldStdout, field.TypeString)
+	}
+	if value, ok := _u.mutation.Stderr(); ok {
+		_spec.SetField(run.FieldStderr, field.TypeString, value)
+	}
+	if _u.mutation.StderrCleared() {
+		_spec.ClearField(run.FieldStderr, field.TypeString)
+	}
 	if value, ok := _u.mutation.WorkerID(); ok {
 		_spec.SetField(run.FieldWorkerID, field.TypeString, value)
 	}
@@ -557,6 +609,46 @@ func (_u *RunUpdateOne) SetNillableError(v *string) *RunUpdateOne {
 // ClearError clears the value of the "error" field.
 func (_u *RunUpdateOne) ClearError() *RunUpdateOne {
 	_u.mutation.ClearError()
+	return _u
+}
+
+// SetStdout sets the "stdout" field.
+func (_u *RunUpdateOne) SetStdout(v string) *RunUpdateOne {
+	_u.mutation.SetStdout(v)
+	return _u
+}
+
+// SetNillableStdout sets the "stdout" field if the given value is not nil.
+func (_u *RunUpdateOne) SetNillableStdout(v *string) *RunUpdateOne {
+	if v != nil {
+		_u.SetStdout(*v)
+	}
+	return _u
+}
+
+// ClearStdout clears the value of the "stdout" field.
+func (_u *RunUpdateOne) ClearStdout() *RunUpdateOne {
+	_u.mutation.ClearStdout()
+	return _u
+}
+
+// SetStderr sets the "stderr" field.
+func (_u *RunUpdateOne) SetStderr(v string) *RunUpdateOne {
+	_u.mutation.SetStderr(v)
+	return _u
+}
+
+// SetNillableStderr sets the "stderr" field if the given value is not nil.
+func (_u *RunUpdateOne) SetNillableStderr(v *string) *RunUpdateOne {
+	if v != nil {
+		_u.SetStderr(*v)
+	}
+	return _u
+}
+
+// ClearStderr clears the value of the "stderr" field.
+func (_u *RunUpdateOne) ClearStderr() *RunUpdateOne {
+	_u.mutation.ClearStderr()
 	return _u
 }
 
@@ -801,6 +893,18 @@ func (_u *RunUpdateOne) sqlSave(ctx context.Context) (_node *Run, err error) {
 	}
 	if _u.mutation.ErrorCleared() {
 		_spec.ClearField(run.FieldError, field.TypeString)
+	}
+	if value, ok := _u.mutation.Stdout(); ok {
+		_spec.SetField(run.FieldStdout, field.TypeString, value)
+	}
+	if _u.mutation.StdoutCleared() {
+		_spec.ClearField(run.FieldStdout, field.TypeString)
+	}
+	if value, ok := _u.mutation.Stderr(); ok {
+		_spec.SetField(run.FieldStderr, field.TypeString, value)
+	}
+	if _u.mutation.StderrCleared() {
+		_spec.ClearField(run.FieldStderr, field.TypeString)
 	}
 	if value, ok := _u.mutation.WorkerID(); ok {
 		_spec.SetField(run.FieldWorkerID, field.TypeString, value)

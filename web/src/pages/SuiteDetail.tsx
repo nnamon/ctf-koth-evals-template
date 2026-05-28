@@ -4,6 +4,7 @@ import { PageHeader } from "../components/PageHeader";
 import { Alert } from "../components/Alert";
 import { Leaderboard } from "../components/Leaderboard";
 import { api } from "../api/client";
+import { subscribeEvents } from "../api/events";
 import type { LeaderboardEntry, Suite } from "../api/types";
 
 export function SuiteDetail() {
@@ -28,6 +29,14 @@ export function SuiteDetail() {
     }
   };
 
+  const onExport = (format: "csv" | "json") => async () => {
+    try {
+      await api.downloadSuiteExport(id, format);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
   const refresh = useCallback(async () => {
     try {
       const [s, b] = await Promise.all([api.getSuite(id), api.leaderboard(id)]);
@@ -42,14 +51,7 @@ export function SuiteDetail() {
     refresh();
   }, [refresh]);
 
-  useEffect(() => {
-    const inFlight = board.some(
-      (e) => e.runs.pending > 0 || e.runs.total === 0,
-    );
-    if (!inFlight) return;
-    const t = setInterval(refresh, 2000);
-    return () => clearInterval(t);
-  }, [board, refresh]);
+  useEffect(() => subscribeEvents(refresh), [refresh]);
 
   return (
     <div className="page">
@@ -67,6 +69,29 @@ export function SuiteDetail() {
           <>
             <div className="page-header">
               <h1>{suite.name}</h1>
+              <Link
+                to={`/suites/${id}/compare`}
+                className="btn secondary"
+                title="Overlay run-score distributions of multiple submissions"
+              >
+                Compare
+              </Link>
+              <button
+                type="button"
+                className="btn secondary"
+                onClick={onExport("csv")}
+                title="Download every run for this suite as CSV"
+              >
+                Export CSV
+              </button>
+              <button
+                type="button"
+                className="btn secondary"
+                onClick={onExport("json")}
+                title="Download every run for this suite as JSON"
+              >
+                Export JSON
+              </button>
               <button
                 type="button"
                 className="btn secondary"

@@ -4,6 +4,7 @@ import { Login } from "./pages/Login";
 import { Overview } from "./pages/Overview";
 import { NewSuite } from "./pages/NewSuite";
 import { SuiteDetail } from "./pages/SuiteDetail";
+import { Compare } from "./pages/Compare";
 import { Submit } from "./pages/Submit";
 import { Submissions } from "./pages/Submissions";
 import { SubmissionDetail } from "./pages/SubmissionDetail";
@@ -37,6 +38,14 @@ function App() {
             element={
               <RequireAuth>
                 <SuiteDetail />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/suites/:id/compare"
+            element={
+              <RequireAuth>
+                <Compare />
               </RequireAuth>
             }
           />

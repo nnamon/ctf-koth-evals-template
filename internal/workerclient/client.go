@@ -104,6 +104,32 @@ func (c *Client) FetchSubmission(ctx context.Context, id int) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
+// RunCancelled reports whether the given run has been cancelled server-side.
+// Polled by a worker while a wrapper executes so long-running work can be
+// killed promptly. A transient error returns (false, err) — the caller treats
+// that as "not cancelled" and retries on the next tick.
+func (c *Client) RunCancelled(ctx context.Context, id int) (bool, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, fmt.Sprintf("/internal/runs/%d/status", id), nil)
+	if err != nil {
+		return false, err
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return false, statusError("run status", resp)
+	}
+	var out struct {
+		Status string `json:"status"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return false, fmt.Errorf("decode status: %w", err)
+	}
+	return out.Status == "cancelled", nil
+}
+
 // ReportResult posts the terminal outcome for a run.
 func (c *Client) ReportResult(ctx context.Context, runID int, body wireapi.ResultRequest) error {
 	buf, err := json.Marshal(body)

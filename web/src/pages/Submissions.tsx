@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { PageHeader } from "../components/PageHeader";
 import { Alert } from "../components/Alert";
 import { api } from "../api/client";
+import { subscribeEvents } from "../api/events";
 import type { RunCounts, SubmissionSummary } from "../api/types";
 
 export function Submissions() {
@@ -25,13 +26,8 @@ export function Submissions() {
     refresh();
   }, [refresh]);
 
-  // Poll while anything has unresolved runs so the status pills stay live.
-  useEffect(() => {
-    const anyInFlight = items.some((s) => s.runs.pending > 0);
-    if (!anyInFlight) return;
-    const t = setInterval(refresh, 1500);
-    return () => clearInterval(t);
-  }, [items, refresh]);
+  // Keep status pills live via server-sent run state changes.
+  useEffect(() => subscribeEvents(refresh), [refresh]);
 
   const run =
     (op: (id: number) => Promise<unknown>) =>
@@ -168,7 +164,7 @@ function Actions({
       <button
         type="button"
         className="btn secondary action-btn"
-        title="Cancel pending / claimed runs (running ones complete on their own)"
+        title="Cancel in-flight runs (running ones are killed on the worker)"
         disabled={!hasPending || busy}
         onClick={onCancel}
       >

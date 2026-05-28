@@ -6,6 +6,7 @@ import type {
   RunDetail,
   Suite,
   SubmissionDetail,
+  SubmissionDistribution,
   SubmissionSummary,
 } from "./types";
 
@@ -63,6 +64,8 @@ export const api = {
     request<Suite>("/api/suites", { method: "POST", json: body }),
   leaderboard: (id: number) =>
     request<LeaderboardEntry[]>(`/api/suites/${id}/leaderboard`),
+  distributions: (id: number) =>
+    request<SubmissionDistribution[]>(`/api/suites/${id}/distributions`),
   listSubmissions: () => request<SubmissionSummary[]>("/api/submissions"),
   getSubmission: (id: number) =>
     request<SubmissionDetail>(`/api/submissions/${id}`),
@@ -71,6 +74,8 @@ export const api = {
 
   cancelSubmission: (id: number) =>
     request<{ cancelled: number }>(`/api/submissions/${id}/cancel`, { method: "POST" }),
+  cancelRun: (id: number) =>
+    request<{ cancelled: number }>(`/api/runs/${id}/cancel`, { method: "POST" }),
   retrySubmission: (id: number) =>
     request<{ retried: number }>(`/api/submissions/${id}/retry`, { method: "POST" }),
   prioritizeSubmission: (id: number) =>
@@ -98,4 +103,38 @@ export const api = {
       body: form,
     });
   },
+
+  // downloadSuiteExport fetches the export (with auth) and triggers a browser
+  // download. A plain <a href> can't be used because the endpoint needs the
+  // Basic auth header.
+  downloadSuiteExport: async (id: number, format: "csv" | "json") => {
+    const headers = new Headers();
+    const auth = authHeader();
+    if (auth) headers.set("Authorization", auth);
+    const res = await fetch(`/api/suites/${id}/export?format=${format}`, {
+      headers,
+    });
+    if (res.status === 401 && onUnauthorized) onUnauthorized();
+    if (!res.ok) throw new ApiError(res.status, await res.text());
+
+    const blob = await res.blob();
+    const filename = filenameFromDisposition(
+      res.headers.get("Content-Disposition"),
+      `suite-${id}.${format}`,
+    );
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
 };
+
+function filenameFromDisposition(header: string | null, fallback: string): string {
+  if (!header) return fallback;
+  const match = /filename="?([^"]+)"?/.exec(header);
+  return match ? match[1] : fallback;
+}

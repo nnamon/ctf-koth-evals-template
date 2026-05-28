@@ -4,6 +4,7 @@ import { PageHeader } from "../components/PageHeader";
 import { Alert } from "../components/Alert";
 import { Leaderboard } from "../components/Leaderboard";
 import { api } from "../api/client";
+import { subscribeEvents } from "../api/events";
 import type { LeaderboardEntry, QueueStatus, Suite } from "../api/types";
 
 export function Overview() {
@@ -54,17 +55,9 @@ export function Overview() {
     refreshBoard();
   }, [refreshBoard]);
 
-  // Live-update while any entry is still running. 1s feels right for the
-  // human eye without hammering the DB on 500-seed suites.
-  useEffect(() => {
-    if (!selected) return;
-    const inFlight = board.some(
-      (e) => e.runs.pending > 0 || !e.metrics,
-    );
-    if (!inFlight) return;
-    const t = setInterval(refreshBoard, 1000);
-    return () => clearInterval(t);
-  }, [selected, board, refreshBoard]);
+  // Live-update via server-sent events — refetch on any run state change
+  // (debounced server-side fan-out), no fixed-interval polling.
+  useEffect(() => subscribeEvents(refreshBoard), [refreshBoard]);
 
   const pickSuite = (id: number) => {
     setParams({ suite: String(id) }, { replace: true });

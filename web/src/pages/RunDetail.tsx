@@ -3,13 +3,17 @@ import { Link, useParams } from "react-router-dom";
 import { PageHeader } from "../components/PageHeader";
 import { Alert } from "../components/Alert";
 import { api } from "../api/client";
+import { subscribeEvents } from "../api/events";
 import type { RunDetail as Detail } from "../api/types";
+
+const IN_FLIGHT = ["pending", "claimed", "running"];
 
 export function RunDetail() {
   const { id } = useParams();
   const runId = Number(id);
   const [run, setRun] = useState<Detail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -23,13 +27,20 @@ export function RunDetail() {
     refresh();
   }, [refresh]);
 
-  // Poll while unresolved.
-  useEffect(() => {
-    if (!run) return;
-    if (!["pending", "claimed", "running"].includes(run.status)) return;
-    const t = setInterval(refresh, 1000);
-    return () => clearInterval(t);
-  }, [run, refresh]);
+  // Refetch on any server-sent run state change.
+  useEffect(() => subscribeEvents(refresh), [refresh]);
+
+  const onCancel = async () => {
+    setCancelling(true);
+    try {
+      await api.cancelRun(runId);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   const duration =
     run?.started_at && run?.finished_at
@@ -62,7 +73,20 @@ export function RunDetail() {
           <p className="t-cmt">loading…</p>
         ) : (
           <>
-            <h1>run #{run.id}</h1>
+            <div className="page-header">
+              <h1>run #{run.id}</h1>
+              {IN_FLIGHT.includes(run.status) && (
+                <button
+                  type="button"
+                  className="btn secondary"
+                  onClick={onCancel}
+                  disabled={cancelling}
+                  title="Hard-cancel this run (kills the worker subprocess)"
+                >
+                  {cancelling ? "Cancelling…" : "Cancel run"}
+                </button>
+              )}
+            </div>
             <p>
               status {statusBadge(run.status)} ·{" "}
               {run.suite_id ? (

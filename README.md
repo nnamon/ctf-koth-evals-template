@@ -22,7 +22,7 @@ Every time we run one of these, we end up rebuilding the same scaffolding: submi
 ## Stack (planned)
 
 - **Backend:** Go — solid subprocess handling (`os/exec` + `context.Context` for timeouts/cancellation), cheap concurrency for a bounded worker pool, single-binary deploys.
-- **Frontend:** Separate React + Vite SPA in `web/`, wired to the API via fetch + session-stored basic-auth. Routes: `/login`, `/` (leaderboard with suite picker), `/suites/new`, `/suites/:id`, `/submit`, `/submissions`, `/submissions/:id`. Aesthetic from [agent-aesthetics](https://github.com/nnamon/agent-aesthetics) (`soft-brutalist-document`, **M2 Magenta** palette). Light is the default; `palette-m2d` is applied when the system prefers dark, with a manual toggle.
+- **Frontend:** Separate React + Vite SPA in `web/`, wired to the API via fetch + session-stored basic-auth. Routes: `/login`, `/` (leaderboard with suite picker), `/suites/new`, `/suites/:id`, `/suites/:id/compare`, `/submit`, `/submissions`, `/submissions/:id`, `/runs/:id`. Aesthetic from [agent-aesthetics](https://github.com/nnamon/agent-aesthetics) (`soft-brutalist-document`, **M2 Magenta** palette). Light is the default; `palette-m2d` is applied when the system prefers dark, with a manual toggle.
 - **Persistence:** [Ent](https://entgo.io) — schema-as-code, codegen produces a type-safe client. Drivers cover SQLite (local dev) and Postgres (prod) with no schema changes.
 - **Deployment:** App ships as a Docker image. Engines run as subprocesses *inside* the app container — no per-run containerization.
 - **Run model:** Asynchronous, DB-backed queue. Pending runs are rows in the `runs` table; the server's `/internal/runs/claim` handler atomically claims one row per call (`BEGIN`, query pending, `UPDATE`, `COMMIT`) behind a server-side mutex so SQLite doesn't `SQLITE_BUSY` under concurrent workers. Adding throughput = running more worker processes. See [Scaling](#scaling).
@@ -268,14 +268,27 @@ All `/api/*` endpoints require HTTP Basic auth with the shared password (usernam
 | GET    | `/api/suites`                       | List all suites (most recent first).                   |
 | POST   | `/api/suites`                       | Create a suite (challenge_id, seeds, optional scoring).|
 | GET    | `/api/suites/{id}`                  | Suite detail.                                          |
+| POST   | `/api/suites/{id}/clone`            | Copy a (sealed) suite into a new editable one.          |
 | GET    | `/api/suites/{id}/leaderboard`      | Aggregated scores per submission, ranked.              |
+| GET    | `/api/suites/{id}/distributions`    | Raw per-submission score arrays (succeeded runs). Backs the cross-submission comparison view. |
+| GET    | `/api/suites/{id}/export`           | Download every run for the suite. `?format=csv` (default) or `json`, with `Content-Disposition`. |
 | GET    | `/api/submissions`                  | List submissions.                                      |
 | POST   | `/api/submissions`                  | Upload an artifact (`multipart/form-data`: one or more `suite_ids` fields, `submitter`, `artifact`). Server fans out one pending Run per (suite × seed) and seals each touched suite. |
 | GET    | `/api/submissions/{id}`             | Submission detail with its runs.                       |
-| GET    | `/api/runs/{id}`                    | Run detail incl. opaque `result` blob.                 |
+| POST   | `/api/submissions/{id}/cancel`      | Hard-cancel the submission's in-flight runs (kills running subprocesses). |
+| POST   | `/api/submissions/{id}/retry`       | Re-queue failed / timed-out / cancelled runs.           |
+| POST   | `/api/submissions/{id}/prioritize`  | Send the submission's pending runs to the top of the queue. |
+| POST   | `/api/submissions/{id}/reevaluate`  | Fan out fresh runs for the artifact against given `suite_ids`. |
+| GET    | `/api/runs/{id}`                    | Run detail incl. opaque `result` blob and stdout/stderr tails. |
+| POST   | `/api/runs/{id}/cancel`             | Hard-cancel a single in-flight run.                     |
 | GET    | `/api/queue`                        | Global queue status: pending count, per-suite mean durations, recent throughput (run-seconds completed per wall-second), and ETA. Drives the live banner on the home page. |
+| GET    | `/api/events`                       | Server-sent event stream. Pushes a coarse `change` event on every run state change so the SPA refetches instead of polling. Auth via `?auth=<base64 user:pass>` (EventSource can't set headers). |
 
 Each leaderboard entry carries all five aggregates (`mean`, `median`, `mode`, `max`, `min`) plus `stddev`, a 95% CI half-width (`ci95_half_width = 1.96 × stddev / √n`), and `p_value_vs_leader` — a two-tailed paired t-test (normal approximation) against the top-mean submission, exploiting the fact that suites have fixed seeds. The SPA defaults to ranking by mean but every metric column is clickable to re-sort.
+
+**Live updates.** The SPA holds one `EventSource` to `/api/events`; the server broadcasts a coarse "something changed" nudge whenever a run is claimed, completes, is cancelled/retried/prioritized, or is reclaimed by the sweeper. The client debounces and refetches the resource it's showing — idle systems push nothing, busy ones push at most a couple of refetches per second. Workers still talk to the server purely over `/internal/*`; the event hub is in-process fan-out only.
+
+**Hard cancel.** Cancelling reaches in-flight work: the server marks the run(s) `cancelled`, and the worker — which polls `GET /internal/runs/{id}/status` while a wrapper runs — kills the wrapper's whole process group (`Setpgid` + `kill(-pgid)`). `handleResult` treats `cancelled` as sticky, so a natural completion landing in the kill window can't resurrect the run.
 
 ## Status
 
@@ -285,11 +298,14 @@ Usable for small-to-medium evals end-to-end:
 - Each leaderboard exposes per-submission distribution stats (mean, median, mode, max, min, stddev), 95% CIs, and paired t-test p-values against the leader.
 - SubmissionDetail breaks out per-suite stats, percentiles (p10/p50/p90/p99), and a score-distribution histogram.
 - Live queue ETA, per-suite mean run duration, worker self-registration, orphan-claim sweeper.
+- **Live updates over server-sent events** — no fixed-interval polling; the leaderboard, queue banner, submission/run views, and submissions list all refetch on push.
+- **Cross-submission comparison** (`/suites/:id/compare`) — overlay the score distributions of several submissions as density-normalised frequency polygons plus a side-by-side metrics table.
+- **Results export** — one-click CSV / JSON dump of every run for a suite.
+- **Ops actions** — cancel (hard, kills running subprocesses), retry, prioritize, clone, and re-evaluate, from the submissions list and run detail page. Wrapper stdout/stderr tails are captured and shown on the run page.
 - One bundled toy challenge (`challenges/regex-count`) with a configurable `sleep` parameter for exercising the worker pool.
 
 Known shortcuts / future work:
-- Failure-only submissions get bucketed under "in flight" on the leaderboard (visually muted but logically dead). Error text isn't surfaced on the run table.
-- No admin re-evaluation endpoint yet — you can manually `INSERT` Runs against a new (submission, suite) pair, or build a small endpoint.
-- Wrapper stdout/stderr is currently discarded by the worker; a real deployment probably wants to persist these to `logs/` in the run's working directory and stream them via an admin endpoint.
+- Failure-only submissions get bucketed under "in flight" on the leaderboard (visually muted but logically dead).
 - `SELECT … FOR UPDATE SKIP LOCKED` not used yet on Postgres — claims go through the same server-side mutex as SQLite. Fine up to moderate scale; rewriting `handleClaim` to use raw SKIP LOCKED would let workers claim concurrently on Postgres.
+- The SSE hub is in-process, so a multi-replica `serve` deployment would need a shared broker (Redis pub/sub, Postgres `LISTEN/NOTIFY`) to fan events across replicas. Single-replica `serve` (the default) needs nothing.
 

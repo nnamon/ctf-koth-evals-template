@@ -8,11 +8,13 @@ package server
 import (
 	"context"
 	"crypto/subtle"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -31,9 +33,17 @@ type Deps struct {
 	// SQLITE_BUSY itself under concurrent workers. On Postgres this is
 	// unnecessary overhead but harmless; the bottleneck moves to the DB.
 	writeMu sync.Mutex
+
+	// hub fans server-sent events out to connected SPA tabs so they refetch
+	// on state changes instead of polling. Initialised by Run.
+	hub *hub
 }
 
 func Run(ctx context.Context, deps *Deps) error {
+	if deps.hub == nil {
+		deps.hub = newHub()
+	}
+
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
@@ -89,6 +99,11 @@ func basicAuth(password string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			_, got, ok := req.BasicAuth()
+			if !ok {
+				// EventSource can't set an Authorization header, so the SSE
+				// stream passes the same base64 "user:pass" blob via ?auth=.
+				got, ok = credsFromQuery(req)
+			}
 			if !ok || subtle.ConstantTimeCompare([]byte(got), expected) != 1 {
 				w.Header().Set("WWW-Authenticate", `Basic realm="ctf-evals"`)
 				http.Error(w, "unauthorized", http.StatusUnauthorized)
@@ -97,6 +112,24 @@ func basicAuth(password string) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, req)
 		})
 	}
+}
+
+// credsFromQuery extracts the password from a ?auth=<base64("user:pass")>
+// query param — the only way to authenticate an EventSource connection.
+func credsFromQuery(req *http.Request) (string, bool) {
+	raw := req.URL.Query().Get("auth")
+	if raw == "" {
+		return "", false
+	}
+	decoded, err := base64.StdEncoding.DecodeString(raw)
+	if err != nil {
+		return "", false
+	}
+	_, pass, found := strings.Cut(string(decoded), ":")
+	if !found {
+		return "", false
+	}
+	return pass, true
 }
 
 // newSPAHandler serves files from dir, falling back to index.html for any

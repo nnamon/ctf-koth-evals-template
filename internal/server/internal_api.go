@@ -25,8 +25,33 @@ func (s *Deps) mountInternal(r chi.Router) {
 		in.Post("/runs/claim", s.handleClaim)
 		in.Get("/bundles/{hash}", s.handleBundle)
 		in.Get("/submissions/{id}/artifact", s.handleArtifact)
+		in.Get("/runs/{id}/status", s.handleRunStatus)
 		in.Post("/runs/{id}/result", s.handleResult)
 	})
+}
+
+// handleRunStatus is polled by a worker mid-execution to learn whether its
+// run has been cancelled out from under it. Read-only, so it stays outside
+// writeMu.
+func (s *Deps) handleRunStatus(w http.ResponseWriter, req *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(req, "id"))
+	if err != nil {
+		http.Error(w, "bad id", http.StatusBadRequest)
+		return
+	}
+	r, err := s.Client.Run.Query().
+		Where(run.IDEQ(id)).
+		Select(run.FieldStatus).
+		Only(req.Context())
+	if err != nil {
+		if ent.IsNotFound(err) {
+			http.NotFound(w, req)
+			return
+		}
+		httpError(w, http.StatusInternalServerError, "query: %v", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": string(r.Status)})
 }
 
 func (s *Deps) handleClaim(w http.ResponseWriter, req *http.Request) {
@@ -78,6 +103,7 @@ func (s *Deps) handleClaim(w http.ResponseWriter, req *http.Request) {
 		httpError(w, http.StatusInternalServerError, "commit: %v", err)
 		return
 	}
+	s.notify("claim")
 
 	resp := wireapi.ClaimResponse{
 		ID:   updated.ID,
@@ -166,6 +192,31 @@ func (s *Deps) handleResult(w http.ResponseWriter, req *http.Request) {
 	s.writeMu.Lock()
 	defer s.writeMu.Unlock()
 
+	// Sticky-cancel guard: if the run is already terminal, ignore the late
+	// report. In particular a natural completion (succeeded/failed/timed_out)
+	// must not override a user cancellation that landed while the subprocess
+	// was being killed. A cancelled report on an already-cancelled run is
+	// allowed through so its logs/timestamps still get recorded.
+	cur, err := s.Client.Run.Query().Where(run.IDEQ(id)).Select(run.FieldStatus).Only(req.Context())
+	if err != nil {
+		if ent.IsNotFound(err) {
+			http.NotFound(w, req)
+			return
+		}
+		httpError(w, http.StatusInternalServerError, "load run: %v", err)
+		return
+	}
+	switch cur.Status {
+	case run.StatusSucceeded, run.StatusFailed, run.StatusTimedOut:
+		w.WriteHeader(http.StatusNoContent)
+		return
+	case run.StatusCancelled:
+		if status != run.StatusCancelled {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+	}
+
 	upd := s.Client.Run.UpdateOneID(id).
 		SetStatus(status).
 		SetFinishedAt(time.Now())
@@ -205,15 +256,16 @@ func (s *Deps) handleResult(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	s.notify("run")
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func parseTerminalStatus(s string) (run.Status, error) {
 	switch run.Status(s) {
-	case run.StatusSucceeded, run.StatusFailed, run.StatusTimedOut:
+	case run.StatusSucceeded, run.StatusFailed, run.StatusTimedOut, run.StatusCancelled:
 		return run.Status(s), nil
 	}
-	return "", fmt.Errorf("status must be one of succeeded|failed|timed_out")
+	return "", fmt.Errorf("status must be one of succeeded|failed|timed_out|cancelled")
 }
 
 func bearerAuth(token string) func(http.Handler) http.Handler {

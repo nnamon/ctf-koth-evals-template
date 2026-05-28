@@ -30,6 +30,7 @@ func (s *Deps) runSweeper(ctx context.Context, workerTimeout, interval time.Dura
 				log.Printf("sweeper: %v", err)
 			} else if n > 0 {
 				log.Printf("sweeper: reclaimed %d orphaned run(s)", n)
+				s.notify("runs")
 			}
 		}
 	}

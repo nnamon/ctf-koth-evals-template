@@ -4,6 +4,7 @@ import { PageHeader } from "../components/PageHeader";
 import { Alert } from "../components/Alert";
 import { SuiteBreakdown } from "../components/SuiteBreakdown";
 import { api } from "../api/client";
+import { subscribeEvents } from "../api/events";
 import type { RunSummary, Suite, SubmissionDetail as Detail } from "../api/types";
 
 export function SubmissionDetail() {
@@ -24,16 +25,8 @@ export function SubmissionDetail() {
     refresh();
   }, [refresh]);
 
-  // Poll while any run is unresolved.
-  useEffect(() => {
-    if (!detail) return;
-    const inFlight = detail.runs.some((r) =>
-      ["pending", "claimed", "running"].includes(r.status),
-    );
-    if (!inFlight) return;
-    const t = setInterval(refresh, 1000);
-    return () => clearInterval(t);
-  }, [detail, refresh]);
+  // Refetch on any server-sent run state change.
+  useEffect(() => subscribeEvents(refresh), [refresh]);
 
   return (
     <div className="page">

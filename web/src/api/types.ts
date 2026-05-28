@@ -51,7 +51,8 @@ export type RunStatus =
   | "running"
   | "succeeded"
   | "failed"
-  | "timed_out";
+  | "timed_out"
+  | "cancelled";
 
 export type RunSummary = {
   id: number;
@@ -110,6 +111,14 @@ export type QueueStatus = {
   throughput_per_sec: number;
   eta_seconds?: number;
   by_suite: QueueSuiteEntry[];
+};
+
+export type SubmissionDistribution = {
+  submission_id: number;
+  name?: string;
+  submitter?: string;
+  scores: number[];
+  submitted_at: string;
 };
 
 export type LeaderboardEntry = {

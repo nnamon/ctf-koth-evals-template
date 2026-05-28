@@ -37,6 +37,8 @@ func (s *Deps) mountPublic(api chi.Router) {
 	api.Get("/suites/{id}", s.getSuite)
 	api.Post("/suites/{id}/clone", s.cloneSuite)
 	api.Get("/suites/{id}/leaderboard", s.getLeaderboard)
+	api.Get("/suites/{id}/distributions", s.getDistributions)
+	api.Get("/suites/{id}/export", s.exportSuite)
 
 	api.Get("/submissions", s.listSubmissions)
 	api.Post("/submissions", s.createSubmission)
@@ -47,8 +49,11 @@ func (s *Deps) mountPublic(api chi.Router) {
 	api.Post("/submissions/{id}/reevaluate", s.reevaluateSubmission)
 
 	api.Get("/runs/{id}", s.getRun)
+	api.Post("/runs/{id}/cancel", s.cancelRun)
 
 	api.Get("/queue", s.getQueue)
+
+	api.Get("/events", s.handleEvents)
 }
 
 // ----- challenges -----
@@ -373,6 +378,7 @@ func (s *Deps) createSubmission(w http.ResponseWriter, req *http.Request) {
 	for _, r := range runs {
 		detail.Runs = append(detail.Runs, runSummary(r))
 	}
+	s.notify("runs")
 	writeJSON(w, http.StatusCreated, detail)
 }
 
@@ -493,11 +499,12 @@ func (s *Deps) getSubmission(w http.ResponseWriter, req *http.Request) {
 	writeJSON(w, http.StatusOK, detail)
 }
 
-// cancelSubmission marks all of a submission's pending or claimed runs as
-// cancelled. Already-running runs aren't interrupted — the worker will
-// finish and post a result, which the server records normally. This keeps
-// the design free of cross-process cancellation plumbing at the cost of a
-// brief window where in-flight work continues.
+// cancelSubmission marks all of a submission's in-flight runs (pending,
+// claimed, or running) as cancelled. A worker executing a claimed run polls
+// its status mid-flight and kills the subprocess when it sees the cancel, so
+// the cancellation is "hard" — long-running work stops promptly rather than
+// burning the whole suite timeout. handleResult treats cancelled as sticky,
+// so a result that lands in the kill window can't resurrect the run.
 func (s *Deps) cancelSubmission(w http.ResponseWriter, req *http.Request) {
 	id, ok := pathID(w, req, "id")
 	if !ok {
@@ -509,7 +516,7 @@ func (s *Deps) cancelSubmission(w http.ResponseWriter, req *http.Request) {
 	n, err := s.Client.Run.Update().
 		Where(
 			run.HasSubmissionWith(submission.IDEQ(id)),
-			run.StatusIn(run.StatusPending, run.StatusClaimed),
+			run.StatusIn(run.StatusPending, run.StatusClaimed, run.StatusRunning),
 		).
 		SetStatus(run.StatusCancelled).
 		SetFinishedAt(time.Now()).
@@ -518,6 +525,33 @@ func (s *Deps) cancelSubmission(w http.ResponseWriter, req *http.Request) {
 		httpError(w, http.StatusInternalServerError, "cancel: %v", err)
 		return
 	}
+	s.notify("runs")
+	writeJSON(w, http.StatusOK, map[string]int{"cancelled": n})
+}
+
+// cancelRun hard-cancels a single in-flight run. Same mechanism as
+// cancelSubmission, scoped to one run — used by the run detail page.
+func (s *Deps) cancelRun(w http.ResponseWriter, req *http.Request) {
+	id, ok := pathID(w, req, "id")
+	if !ok {
+		return
+	}
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+
+	n, err := s.Client.Run.Update().
+		Where(
+			run.IDEQ(id),
+			run.StatusIn(run.StatusPending, run.StatusClaimed, run.StatusRunning),
+		).
+		SetStatus(run.StatusCancelled).
+		SetFinishedAt(time.Now()).
+		Save(req.Context())
+	if err != nil {
+		httpError(w, http.StatusInternalServerError, "cancel: %v", err)
+		return
+	}
+	s.notify("runs")
 	writeJSON(w, http.StatusOK, map[string]int{"cancelled": n})
 }
 
@@ -551,6 +585,7 @@ func (s *Deps) retrySubmission(w http.ResponseWriter, req *http.Request) {
 		httpError(w, http.StatusInternalServerError, "retry: %v", err)
 		return
 	}
+	s.notify("runs")
 	writeJSON(w, http.StatusOK, map[string]int{"retried": n})
 }
 
@@ -577,6 +612,7 @@ func (s *Deps) prioritizeSubmission(w http.ResponseWriter, req *http.Request) {
 		httpError(w, http.StatusInternalServerError, "prioritize: %v", err)
 		return
 	}
+	s.notify("runs")
 	writeJSON(w, http.StatusOK, map[string]int{"prioritized": n})
 }
 
@@ -660,6 +696,7 @@ func (s *Deps) reevaluateSubmission(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	committed = true
+	s.notify("runs")
 	writeJSON(w, http.StatusOK, map[string]int{"runs_created": created})
 }
 

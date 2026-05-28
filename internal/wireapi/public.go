@@ -139,3 +139,32 @@ type RunCounts struct {
 	Pending   int `json:"pending"`
 	Cancelled int `json:"cancelled"`
 }
+
+// SubmissionDistribution is one series in GET /api/suites/{id}/distributions —
+// every succeeded run's score for a submission, used to overlay distributions
+// in the cross-submission comparison view.
+type SubmissionDistribution struct {
+	SubmissionID int       `json:"submission_id"`
+	Name         string    `json:"name,omitempty"`
+	Submitter    string    `json:"submitter,omitempty"`
+	Scores       []float64 `json:"scores"`
+	SubmittedAt  time.Time `json:"submitted_at"`
+}
+
+// ExportRow is one run in GET /api/suites/{id}/export?format=json. The CSV
+// form has the same columns in the same order.
+type ExportRow struct {
+	RunID          int        `json:"run_id"`
+	SubmissionID   int        `json:"submission_id"`
+	SubmissionName string     `json:"submission_name,omitempty"`
+	Submitter      string     `json:"submitter,omitempty"`
+	SuiteID        int        `json:"suite_id"`
+	Seed           string     `json:"seed"`
+	Status         string     `json:"status"`
+	Score          *float64   `json:"score,omitempty"`
+	DurationMs     *int64     `json:"duration_ms,omitempty"`
+	StartedAt      *time.Time `json:"started_at,omitempty"`
+	FinishedAt     *time.Time `json:"finished_at,omitempty"`
+	CreatedAt      time.Time  `json:"created_at"`
+	Error          string     `json:"error,omitempty"`
+}

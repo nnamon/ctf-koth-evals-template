@@ -19,6 +19,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/nnamon/ctf-koth-evals-template/internal/bundle"
@@ -26,6 +28,11 @@ import (
 	"github.com/nnamon/ctf-koth-evals-template/internal/wireapi"
 	"github.com/nnamon/ctf-koth-evals-template/internal/workerclient"
 )
+
+// cancelPollInterval is how often a running wrapper's worker checks back with
+// the server to see if the run was cancelled. Only matters for long-running
+// engines; short runs finish before the first tick.
+const cancelPollInterval = 2 * time.Second
 
 type Deps struct {
 	Cfg config.Config
@@ -118,11 +125,25 @@ func execute(ctx context.Context, client *workerclient.Client, cfg config.Config
 	if timeout <= 0 {
 		timeout = 60 * time.Second
 	}
-	runCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
+	// Two layers: cancelCtx is tripped by the watchdog when the run is
+	// cancelled server-side; runCtx adds the suite timeout on top. Either
+	// firing kills the wrapper's whole process group via cmd.Cancel below.
+	cancelCtx, cancelRun := context.WithCancel(ctx)
+	defer cancelRun()
+	runCtx, cancelTimeout := context.WithTimeout(cancelCtx, timeout)
+	defer cancelTimeout()
 
 	cmd := exec.CommandContext(runCtx, wrapper, "--workdir="+workdir)
 	cmd.Env = append(os.Environ(), parametersToEnv(claim.Suite.Parameters)...)
+	// Run the wrapper in its own process group so a cancel/timeout kills the
+	// engine subprocess too, not just the wrapper shell.
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.Cancel = func() error {
+		if cmd.Process == nil {
+			return nil
+		}
+		return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+	}
 
 	// Tee the subprocess streams: full output to logs/ in the workdir,
 	// last-N-bytes tail to in-memory buffers that ride back in the result.
@@ -142,11 +163,49 @@ func execute(ctx context.Context, client *workerclient.Client, cfg config.Config
 	cmd.Stderr = io.MultiWriter(errWriters...)
 
 	startedAt := time.Now()
-	runErr := cmd.Run()
+	if err := cmd.Start(); err != nil {
+		return reportFailureLogs(ctx, client, claim.ID, fmt.Errorf("start wrapper: %w", err), &startedAt, "", "")
+	}
+
+	// Watchdog: poll for a server-side cancellation while the wrapper runs.
+	// On cancel, trip cancelRun (kills the process group via cmd.Cancel).
+	var cancelledByServer atomic.Bool
+	watchDone := make(chan struct{})
+	go func() {
+		defer close(watchDone)
+		t := time.NewTicker(cancelPollInterval)
+		defer t.Stop()
+		for {
+			select {
+			case <-runCtx.Done():
+				return
+			case <-t.C:
+				if ok, err := client.RunCancelled(ctx, claim.ID); err == nil && ok {
+					cancelledByServer.Store(true)
+					cancelRun()
+					return
+				}
+			}
+		}
+	}()
+
+	runErr := cmd.Wait()
+	timedOut := errors.Is(runCtx.Err(), context.DeadlineExceeded)
+	cancelTimeout() // stop the watchdog promptly
+	<-watchDone
 	stdout := stdoutTail.String()
 	stderr := stderrTail.String()
 
-	if errors.Is(runCtx.Err(), context.DeadlineExceeded) {
+	if cancelledByServer.Load() {
+		return client.ReportResult(ctx, claim.ID, wireapi.ResultRequest{
+			Status:    "cancelled",
+			Error:     "run cancelled by operator",
+			StartedAt: &startedAt,
+			Stdout:    stdout,
+			Stderr:    stderr,
+		})
+	}
+	if timedOut {
 		return client.ReportResult(ctx, claim.ID, wireapi.ResultRequest{
 			Status:    "timed_out",
 			Error:     "wrapper exceeded suite timeout",

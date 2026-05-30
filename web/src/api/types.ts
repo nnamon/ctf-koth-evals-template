@@ -38,6 +38,7 @@ type SubmissionBase = {
   submitter?: string;
   artifact_name: string;
   artifact_size: number;
+  artifact_sha256?: string;
   created_at: string;
 };
 

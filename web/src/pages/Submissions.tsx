@@ -81,6 +81,17 @@ export function Submissions() {
                       <Link to={`/submissions/${s.id}`}>
                         {s.name || <code className="t-cmt">unnamed</code>}
                       </Link>
+                      {s.artifact_sha256 && (
+                        <div>
+                          <code
+                            className="t-cmt"
+                            title={s.artifact_sha256}
+                            style={{ fontSize: 11, cursor: "help" }}
+                          >
+                            {s.artifact_sha256.slice(0, 12)}…
+                          </code>
+                        </div>
+                      )}
                     </td>
                     <td>
                       {s.submitter ? (

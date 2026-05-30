@@ -80,6 +80,11 @@ func ArtifactSize(v int64) predicate.Submission {
 	return predicate.Submission(sql.FieldEQ(FieldArtifactSize, v))
 }
 
+// ArtifactSha256 applies equality check predicate on the "artifact_sha256" field. It's identical to ArtifactSha256EQ.
+func ArtifactSha256(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldEQ(FieldArtifactSha256, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.Submission {
 	return predicate.Submission(sql.FieldEQ(FieldCreatedAt, v))
@@ -378,6 +383,81 @@ func ArtifactSizeLT(v int64) predicate.Submission {
 // ArtifactSizeLTE applies the LTE predicate on the "artifact_size" field.
 func ArtifactSizeLTE(v int64) predicate.Submission {
 	return predicate.Submission(sql.FieldLTE(FieldArtifactSize, v))
+}
+
+// ArtifactSha256EQ applies the EQ predicate on the "artifact_sha256" field.
+func ArtifactSha256EQ(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldEQ(FieldArtifactSha256, v))
+}
+
+// ArtifactSha256NEQ applies the NEQ predicate on the "artifact_sha256" field.
+func ArtifactSha256NEQ(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldNEQ(FieldArtifactSha256, v))
+}
+
+// ArtifactSha256In applies the In predicate on the "artifact_sha256" field.
+func ArtifactSha256In(vs ...string) predicate.Submission {
+	return predicate.Submission(sql.FieldIn(FieldArtifactSha256, vs...))
+}
+
+// ArtifactSha256NotIn applies the NotIn predicate on the "artifact_sha256" field.
+func ArtifactSha256NotIn(vs ...string) predicate.Submission {
+	return predicate.Submission(sql.FieldNotIn(FieldArtifactSha256, vs...))
+}
+
+// ArtifactSha256GT applies the GT predicate on the "artifact_sha256" field.
+func ArtifactSha256GT(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldGT(FieldArtifactSha256, v))
+}
+
+// ArtifactSha256GTE applies the GTE predicate on the "artifact_sha256" field.
+func ArtifactSha256GTE(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldGTE(FieldArtifactSha256, v))
+}
+
+// ArtifactSha256LT applies the LT predicate on the "artifact_sha256" field.
+func ArtifactSha256LT(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldLT(FieldArtifactSha256, v))
+}
+
+// ArtifactSha256LTE applies the LTE predicate on the "artifact_sha256" field.
+func ArtifactSha256LTE(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldLTE(FieldArtifactSha256, v))
+}
+
+// ArtifactSha256Contains applies the Contains predicate on the "artifact_sha256" field.
+func ArtifactSha256Contains(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldContains(FieldArtifactSha256, v))
+}
+
+// ArtifactSha256HasPrefix applies the HasPrefix predicate on the "artifact_sha256" field.
+func ArtifactSha256HasPrefix(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldHasPrefix(FieldArtifactSha256, v))
+}
+
+// ArtifactSha256HasSuffix applies the HasSuffix predicate on the "artifact_sha256" field.
+func ArtifactSha256HasSuffix(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldHasSuffix(FieldArtifactSha256, v))
+}
+
+// ArtifactSha256IsNil applies the IsNil predicate on the "artifact_sha256" field.
+func ArtifactSha256IsNil() predicate.Submission {
+	return predicate.Submission(sql.FieldIsNull(FieldArtifactSha256))
+}
+
+// ArtifactSha256NotNil applies the NotNil predicate on the "artifact_sha256" field.
+func ArtifactSha256NotNil() predicate.Submission {
+	return predicate.Submission(sql.FieldNotNull(FieldArtifactSha256))
+}
+
+// ArtifactSha256EqualFold applies the EqualFold predicate on the "artifact_sha256" field.
+func ArtifactSha256EqualFold(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldEqualFold(FieldArtifactSha256, v))
+}
+
+// ArtifactSha256ContainsFold applies the ContainsFold predicate on the "artifact_sha256" field.
+func ArtifactSha256ContainsFold(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldContainsFold(FieldArtifactSha256, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

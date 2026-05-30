@@ -228,6 +228,9 @@ func (_u *SubmissionUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.AddedArtifactSize(); ok {
 		_spec.AddField(submission.FieldArtifactSize, field.TypeInt64, value)
 	}
+	if _u.mutation.ArtifactSha256Cleared() {
+		_spec.ClearField(submission.FieldArtifactSha256, field.TypeString)
+	}
 	if _u.mutation.RunsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -522,6 +525,9 @@ func (_u *SubmissionUpdateOne) sqlSave(ctx context.Context) (_node *Submission, 
 	}
 	if value, ok := _u.mutation.AddedArtifactSize(); ok {
 		_spec.AddField(submission.FieldArtifactSize, field.TypeInt64, value)
+	}
+	if _u.mutation.ArtifactSha256Cleared() {
+		_spec.ClearField(submission.FieldArtifactSha256, field.TypeString)
 	}
 	if _u.mutation.RunsCleared() {
 		edge := &sqlgraph.EdgeSpec{

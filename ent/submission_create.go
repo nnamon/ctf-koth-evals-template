@@ -69,6 +69,20 @@ func (_c *SubmissionCreate) SetArtifactSize(v int64) *SubmissionCreate {
 	return _c
 }
 
+// SetArtifactSha256 sets the "artifact_sha256" field.
+func (_c *SubmissionCreate) SetArtifactSha256(v string) *SubmissionCreate {
+	_c.mutation.SetArtifactSha256(v)
+	return _c
+}
+
+// SetNillableArtifactSha256 sets the "artifact_sha256" field if the given value is not nil.
+func (_c *SubmissionCreate) SetNillableArtifactSha256(v *string) *SubmissionCreate {
+	if v != nil {
+		_c.SetArtifactSha256(*v)
+	}
+	return _c
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_c *SubmissionCreate) SetCreatedAt(v time.Time) *SubmissionCreate {
 	_c.mutation.SetCreatedAt(v)
@@ -160,6 +174,11 @@ func (_c *SubmissionCreate) check() error {
 			return &ValidationError{Name: "artifact_size", err: fmt.Errorf(`ent: validator failed for field "Submission.artifact_size": %w`, err)}
 		}
 	}
+	if v, ok := _c.mutation.ArtifactSha256(); ok {
+		if err := submission.ArtifactSha256Validator(v); err != nil {
+			return &ValidationError{Name: "artifact_sha256", err: fmt.Errorf(`ent: validator failed for field "Submission.artifact_sha256": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Submission.created_at"`)}
 	}
@@ -209,6 +228,10 @@ func (_c *SubmissionCreate) createSpec() (*Submission, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.ArtifactSize(); ok {
 		_spec.SetField(submission.FieldArtifactSize, field.TypeInt64, value)
 		_node.ArtifactSize = value
+	}
+	if value, ok := _c.mutation.ArtifactSha256(); ok {
+		_spec.SetField(submission.FieldArtifactSha256, field.TypeString, value)
+		_node.ArtifactSha256 = value
 	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(submission.FieldCreatedAt, field.TypeTime, value)
@@ -371,6 +394,9 @@ func (u *SubmissionUpsert) AddArtifactSize(v int64) *SubmissionUpsert {
 func (u *SubmissionUpsertOne) UpdateNewValues() *SubmissionUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ArtifactSha256(); exists {
+			s.SetIgnore(submission.FieldArtifactSha256)
+		}
 		if _, exists := u.create.mutation.CreatedAt(); exists {
 			s.SetIgnore(submission.FieldCreatedAt)
 		}
@@ -672,6 +698,9 @@ func (u *SubmissionUpsertBulk) UpdateNewValues() *SubmissionUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ArtifactSha256(); exists {
+				s.SetIgnore(submission.FieldArtifactSha256)
+			}
 			if _, exists := b.mutation.CreatedAt(); exists {
 				s.SetIgnore(submission.FieldCreatedAt)
 			}

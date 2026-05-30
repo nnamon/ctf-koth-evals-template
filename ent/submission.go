@@ -27,6 +27,8 @@ type Submission struct {
 	Artifact []byte `json:"artifact,omitempty"`
 	// ArtifactSize holds the value of the "artifact_size" field.
 	ArtifactSize int64 `json:"artifact_size,omitempty"`
+	// ArtifactSha256 holds the value of the "artifact_sha256" field.
+	ArtifactSha256 string `json:"artifact_sha256,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -62,7 +64,7 @@ func (*Submission) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case submission.FieldID, submission.FieldArtifactSize:
 			values[i] = new(sql.NullInt64)
-		case submission.FieldName, submission.FieldSubmitter, submission.FieldArtifactName:
+		case submission.FieldName, submission.FieldSubmitter, submission.FieldArtifactName, submission.FieldArtifactSha256:
 			values[i] = new(sql.NullString)
 		case submission.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -116,6 +118,12 @@ func (_m *Submission) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field artifact_size", values[i])
 			} else if value.Valid {
 				_m.ArtifactSize = value.Int64
+			}
+		case submission.FieldArtifactSha256:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field artifact_sha256", values[i])
+			} else if value.Valid {
+				_m.ArtifactSha256 = value.String
 			}
 		case submission.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -178,6 +186,9 @@ func (_m *Submission) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("artifact_size=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ArtifactSize))
+	builder.WriteString(", ")
+	builder.WriteString("artifact_sha256=")
+	builder.WriteString(_m.ArtifactSha256)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))

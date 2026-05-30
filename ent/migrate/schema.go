@@ -91,6 +91,7 @@ var (
 		{Name: "artifact_name", Type: field.TypeString},
 		{Name: "artifact", Type: field.TypeBytes},
 		{Name: "artifact_size", Type: field.TypeInt64},
+		{Name: "artifact_sha256", Type: field.TypeString, Nullable: true, Size: 64},
 		{Name: "created_at", Type: field.TypeTime},
 	}
 	// SubmissionsTable holds the schema information for the "submissions" table.

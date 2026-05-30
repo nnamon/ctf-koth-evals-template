@@ -115,7 +115,7 @@ func (s *Deps) exportSuite(w http.ResponseWriter, req *http.Request) {
 		Where(run.HasSuiteWith(suite.IDEQ(id))).
 		Order(ent.Asc(run.FieldID)).
 		WithSubmission(func(q *ent.SubmissionQuery) {
-			q.Select(submission.FieldID, submission.FieldName, submission.FieldSubmitter)
+			q.Select(submission.FieldID, submission.FieldName, submission.FieldSubmitter, submission.FieldArtifactSha256)
 		}).
 		All(req.Context())
 	if err != nil {
@@ -141,9 +141,9 @@ func (s *Deps) exportSuite(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Disposition", `attachment; filename="`+base+`.csv"`)
 	cw := csv.NewWriter(w)
 	_ = cw.Write([]string{
-		"run_id", "submission_id", "submission_name", "submitter", "suite_id",
-		"seed", "status", "score", "duration_ms", "started_at", "finished_at",
-		"created_at", "error",
+		"run_id", "submission_id", "submission_name", "submission_sha256",
+		"submitter", "suite_id", "seed", "status", "score", "duration_ms",
+		"started_at", "finished_at", "created_at", "error",
 	})
 	for _, r := range runs {
 		row := exportRow(r, id)
@@ -151,6 +151,7 @@ func (s *Deps) exportSuite(w http.ResponseWriter, req *http.Request) {
 			strconv.Itoa(row.RunID),
 			strconv.Itoa(row.SubmissionID),
 			row.SubmissionName,
+			row.SubmissionSha256,
 			row.Submitter,
 			strconv.Itoa(row.SuiteID),
 			row.Seed,
@@ -181,6 +182,7 @@ func exportRow(r *ent.Run, suiteID int) wireapi.ExportRow {
 	if r.Edges.Submission != nil {
 		row.SubmissionID = r.Edges.Submission.ID
 		row.SubmissionName = r.Edges.Submission.Name
+		row.SubmissionSha256 = r.Edges.Submission.ArtifactSha256
 		row.Submitter = r.Edges.Submission.Submitter
 	}
 	if r.StartedAt != nil && r.FinishedAt != nil {

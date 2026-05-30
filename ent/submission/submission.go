@@ -24,6 +24,8 @@ const (
 	FieldArtifact = "artifact"
 	// FieldArtifactSize holds the string denoting the artifact_size field in the database.
 	FieldArtifactSize = "artifact_size"
+	// FieldArtifactSha256 holds the string denoting the artifact_sha256 field in the database.
+	FieldArtifactSha256 = "artifact_sha256"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// EdgeRuns holds the string denoting the runs edge name in mutations.
@@ -47,6 +49,7 @@ var Columns = []string{
 	FieldArtifactName,
 	FieldArtifact,
 	FieldArtifactSize,
+	FieldArtifactSha256,
 	FieldCreatedAt,
 }
 
@@ -65,6 +68,8 @@ var (
 	ArtifactNameValidator func(string) error
 	// ArtifactSizeValidator is a validator for the "artifact_size" field. It is called by the builders before save.
 	ArtifactSizeValidator func(int64) error
+	// ArtifactSha256Validator is a validator for the "artifact_sha256" field. It is called by the builders before save.
+	ArtifactSha256Validator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 )
@@ -95,6 +100,11 @@ func ByArtifactName(opts ...sql.OrderTermOption) OrderOption {
 // ByArtifactSize orders the results by the artifact_size field.
 func ByArtifactSize(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldArtifactSize, opts...).ToFunc()
+}
+
+// ByArtifactSha256 orders the results by the artifact_sha256 field.
+func ByArtifactSha256(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldArtifactSha256, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

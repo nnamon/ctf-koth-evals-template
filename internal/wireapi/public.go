@@ -40,12 +40,13 @@ type SuiteDetail struct {
 
 // SubmissionSummary is one row in GET /api/submissions.
 type SubmissionSummary struct {
-	ID           int       `json:"id"`
-	Name         string    `json:"name,omitempty"`
-	Submitter    string    `json:"submitter,omitempty"`
-	ArtifactName string    `json:"artifact_name"`
-	ArtifactSize int64     `json:"artifact_size"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID             int       `json:"id"`
+	Name           string    `json:"name,omitempty"`
+	Submitter      string    `json:"submitter,omitempty"`
+	ArtifactName   string    `json:"artifact_name"`
+	ArtifactSize   int64     `json:"artifact_size"`
+	ArtifactSha256 string    `json:"artifact_sha256,omitempty"`
+	CreatedAt      time.Time `json:"created_at"`
 	// Runs is the aggregated count breakdown across every run this
 	// submission has produced (across all suites). Drives the
 	// status pills and action button gating on the /submissions list.
@@ -154,12 +155,13 @@ type SubmissionDistribution struct {
 // ExportRow is one run in GET /api/suites/{id}/export?format=json. The CSV
 // form has the same columns in the same order.
 type ExportRow struct {
-	RunID          int        `json:"run_id"`
-	SubmissionID   int        `json:"submission_id"`
-	SubmissionName string     `json:"submission_name,omitempty"`
-	Submitter      string     `json:"submitter,omitempty"`
-	SuiteID        int        `json:"suite_id"`
-	Seed           string     `json:"seed"`
+	RunID            int        `json:"run_id"`
+	SubmissionID     int        `json:"submission_id"`
+	SubmissionName   string     `json:"submission_name,omitempty"`
+	SubmissionSha256 string     `json:"submission_sha256,omitempty"`
+	Submitter        string     `json:"submitter,omitempty"`
+	SuiteID          int        `json:"suite_id"`
+	Seed             string     `json:"seed"`
 	Status         string     `json:"status"`
 	Score          *float64   `json:"score,omitempty"`
 	DurationMs     *int64     `json:"duration_ms,omitempty"`

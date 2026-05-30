@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -257,6 +259,7 @@ func (s *Deps) listSubmissions(w http.ResponseWriter, req *http.Request) {
 			submission.FieldSubmitter,
 			submission.FieldArtifactName,
 			submission.FieldArtifactSize,
+			submission.FieldArtifactSha256,
 			submission.FieldCreatedAt,
 		).
 		All(ctx)
@@ -365,7 +368,8 @@ func (s *Deps) createSubmission(w http.ResponseWriter, req *http.Request) {
 		name = defaultName(header.Filename)
 	}
 
-	created, runs, err := s.persistSubmission(req.Context(), suites, name, submitter, header.Filename, artifact)
+	sum := sha256.Sum256(artifact)
+	created, runs, err := s.persistSubmission(req.Context(), suites, name, submitter, header.Filename, artifact, hex.EncodeToString(sum[:]))
 	if err != nil {
 		httpError(w, http.StatusInternalServerError, "persist: %v", err)
 		return
@@ -415,7 +419,7 @@ func parseSuiteIDs(raw []string) ([]int, error) {
 // persistSubmission creates one Submission and fans out one pending Run per
 // (suite × seed). All suites are sealed. Wrapped in a transaction so partial
 // failure doesn't leave a submission with missing runs.
-func (s *Deps) persistSubmission(ctx context.Context, suites []*ent.Suite, name, submitter, filename string, artifact []byte) (*ent.Submission, []*ent.Run, error) {
+func (s *Deps) persistSubmission(ctx context.Context, suites []*ent.Suite, name, submitter, filename string, artifact []byte, sha256hex string) (*ent.Submission, []*ent.Run, error) {
 	tx, err := s.Client.Tx(ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("begin tx: %w", err)
@@ -433,6 +437,7 @@ func (s *Deps) persistSubmission(ctx context.Context, suites []*ent.Suite, name,
 		SetArtifactName(filename).
 		SetArtifact(artifact).
 		SetArtifactSize(int64(len(artifact))).
+		SetArtifactSha256(sha256hex).
 		Save(ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("create submission: %w", err)
@@ -702,12 +707,13 @@ func (s *Deps) reevaluateSubmission(w http.ResponseWriter, req *http.Request) {
 
 func submissionSummary(r *ent.Submission) wireapi.SubmissionSummary {
 	return wireapi.SubmissionSummary{
-		ID:           r.ID,
-		Name:         r.Name,
-		Submitter:    r.Submitter,
-		ArtifactName: r.ArtifactName,
-		ArtifactSize: r.ArtifactSize,
-		CreatedAt:    r.CreatedAt,
+		ID:             r.ID,
+		Name:           r.Name,
+		Submitter:      r.Submitter,
+		ArtifactName:   r.ArtifactName,
+		ArtifactSize:   r.ArtifactSize,
+		ArtifactSha256: r.ArtifactSha256,
+		CreatedAt:      r.CreatedAt,
 	}
 }
 

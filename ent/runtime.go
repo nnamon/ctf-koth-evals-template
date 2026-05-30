@@ -59,8 +59,12 @@ func init() {
 	submissionDescArtifactSize := submissionFields[4].Descriptor()
 	// submission.ArtifactSizeValidator is a validator for the "artifact_size" field. It is called by the builders before save.
 	submission.ArtifactSizeValidator = submissionDescArtifactSize.Validators[0].(func(int64) error)
+	// submissionDescArtifactSha256 is the schema descriptor for artifact_sha256 field.
+	submissionDescArtifactSha256 := submissionFields[5].Descriptor()
+	// submission.ArtifactSha256Validator is a validator for the "artifact_sha256" field. It is called by the builders before save.
+	submission.ArtifactSha256Validator = submissionDescArtifactSha256.Validators[0].(func(string) error)
 	// submissionDescCreatedAt is the schema descriptor for created_at field.
-	submissionDescCreatedAt := submissionFields[5].Descriptor()
+	submissionDescCreatedAt := submissionFields[6].Descriptor()
 	// submission.DefaultCreatedAt holds the default value on creation for the created_at field.
 	submission.DefaultCreatedAt = submissionDescCreatedAt.Default.(func() time.Time)
 	suiteFields := schema.Suite{}.Fields()

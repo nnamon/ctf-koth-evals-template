@@ -65,6 +65,19 @@ export function SubmissionDetail() {
                 <code className="t-num">
                   {new Date(detail.created_at).toLocaleString()}
                 </code>
+                {detail.artifact_sha256 && (
+                  <>
+                    {" "}
+                    · sha256{" "}
+                    <code
+                      className="t-path"
+                      title={detail.artifact_sha256}
+                      style={{ cursor: "help" }}
+                    >
+                      {detail.artifact_sha256.slice(0, 12)}…
+                    </code>
+                  </>
+                )}
               </p>
 
               <Reevaluate submissionId={subId} onDone={refresh} />

@@ -2192,6 +2192,7 @@ type SubmissionMutation struct {
 	artifact         *[]byte
 	artifact_size    *int64
 	addartifact_size *int64
+	artifact_sha256  *string
 	created_at       *time.Time
 	clearedFields    map[string]struct{}
 	runs             map[int]struct{}
@@ -2526,6 +2527,55 @@ func (m *SubmissionMutation) ResetArtifactSize() {
 	m.addartifact_size = nil
 }
 
+// SetArtifactSha256 sets the "artifact_sha256" field.
+func (m *SubmissionMutation) SetArtifactSha256(s string) {
+	m.artifact_sha256 = &s
+}
+
+// ArtifactSha256 returns the value of the "artifact_sha256" field in the mutation.
+func (m *SubmissionMutation) ArtifactSha256() (r string, exists bool) {
+	v := m.artifact_sha256
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldArtifactSha256 returns the old "artifact_sha256" field's value of the Submission entity.
+// If the Submission object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubmissionMutation) OldArtifactSha256(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldArtifactSha256 is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldArtifactSha256 requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldArtifactSha256: %w", err)
+	}
+	return oldValue.ArtifactSha256, nil
+}
+
+// ClearArtifactSha256 clears the value of the "artifact_sha256" field.
+func (m *SubmissionMutation) ClearArtifactSha256() {
+	m.artifact_sha256 = nil
+	m.clearedFields[submission.FieldArtifactSha256] = struct{}{}
+}
+
+// ArtifactSha256Cleared returns if the "artifact_sha256" field was cleared in this mutation.
+func (m *SubmissionMutation) ArtifactSha256Cleared() bool {
+	_, ok := m.clearedFields[submission.FieldArtifactSha256]
+	return ok
+}
+
+// ResetArtifactSha256 resets all changes to the "artifact_sha256" field.
+func (m *SubmissionMutation) ResetArtifactSha256() {
+	m.artifact_sha256 = nil
+	delete(m.clearedFields, submission.FieldArtifactSha256)
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (m *SubmissionMutation) SetCreatedAt(t time.Time) {
 	m.created_at = &t
@@ -2650,7 +2700,7 @@ func (m *SubmissionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SubmissionMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.name != nil {
 		fields = append(fields, submission.FieldName)
 	}
@@ -2665,6 +2715,9 @@ func (m *SubmissionMutation) Fields() []string {
 	}
 	if m.artifact_size != nil {
 		fields = append(fields, submission.FieldArtifactSize)
+	}
+	if m.artifact_sha256 != nil {
+		fields = append(fields, submission.FieldArtifactSha256)
 	}
 	if m.created_at != nil {
 		fields = append(fields, submission.FieldCreatedAt)
@@ -2687,6 +2740,8 @@ func (m *SubmissionMutation) Field(name string) (ent.Value, bool) {
 		return m.Artifact()
 	case submission.FieldArtifactSize:
 		return m.ArtifactSize()
+	case submission.FieldArtifactSha256:
+		return m.ArtifactSha256()
 	case submission.FieldCreatedAt:
 		return m.CreatedAt()
 	}
@@ -2708,6 +2763,8 @@ func (m *SubmissionMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldArtifact(ctx)
 	case submission.FieldArtifactSize:
 		return m.OldArtifactSize(ctx)
+	case submission.FieldArtifactSha256:
+		return m.OldArtifactSha256(ctx)
 	case submission.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	}
@@ -2753,6 +2810,13 @@ func (m *SubmissionMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetArtifactSize(v)
+		return nil
+	case submission.FieldArtifactSha256:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetArtifactSha256(v)
 		return nil
 	case submission.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -2812,6 +2876,9 @@ func (m *SubmissionMutation) ClearedFields() []string {
 	if m.FieldCleared(submission.FieldSubmitter) {
 		fields = append(fields, submission.FieldSubmitter)
 	}
+	if m.FieldCleared(submission.FieldArtifactSha256) {
+		fields = append(fields, submission.FieldArtifactSha256)
+	}
 	return fields
 }
 
@@ -2831,6 +2898,9 @@ func (m *SubmissionMutation) ClearField(name string) error {
 		return nil
 	case submission.FieldSubmitter:
 		m.ClearSubmitter()
+		return nil
+	case submission.FieldArtifactSha256:
+		m.ClearArtifactSha256()
 		return nil
 	}
 	return fmt.Errorf("unknown Submission nullable field %s", name)
@@ -2854,6 +2924,9 @@ func (m *SubmissionMutation) ResetField(name string) error {
 		return nil
 	case submission.FieldArtifactSize:
 		m.ResetArtifactSize()
+		return nil
+	case submission.FieldArtifactSha256:
+		m.ResetArtifactSha256()
 		return nil
 	case submission.FieldCreatedAt:
 		m.ResetCreatedAt()

@@ -34,7 +34,7 @@ function onChange() {
 
 function ensureOpen() {
   if (source) return;
-  const creds = sessionStorage.getItem(STORAGE_KEY);
+  const creds = localStorage.getItem(STORAGE_KEY);
   const url = creds
     ? `/api/events?auth=${encodeURIComponent(creds)}`
     : "/api/events";

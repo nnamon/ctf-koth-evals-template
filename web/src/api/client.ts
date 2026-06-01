@@ -28,7 +28,7 @@ export function setUnauthorizedHandler(fn: (() => void) | null) {
 }
 
 function authHeader(): string | null {
-  const creds = sessionStorage.getItem("ctf-evals.creds");
+  const creds = localStorage.getItem("ctf-evals.creds");
   return creds ? `Basic ${creds}` : null;
 }
 

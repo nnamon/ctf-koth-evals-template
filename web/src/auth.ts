@@ -12,14 +12,14 @@ type AuthState = {
 const AuthCtx = createContext<AuthState | null>(null);
 
 function readStored(): boolean {
-  return sessionStorage.getItem(STORAGE_KEY) !== null;
+  return localStorage.getItem(STORAGE_KEY) !== null;
 }
 
 export function useAuthValue(): AuthState {
   const [authenticated, setAuthenticated] = useState<boolean>(() => readStored());
 
   const logout = useCallback(() => {
-    sessionStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_KEY);
     setAuthenticated(false);
   }, []);
 
@@ -30,12 +30,12 @@ export function useAuthValue(): AuthState {
 
   const login = useCallback(async (password: string) => {
     const creds = btoa(`admin:${password}`);
-    sessionStorage.setItem(STORAGE_KEY, creds);
+    localStorage.setItem(STORAGE_KEY, creds);
     try {
       await api.me();
       setAuthenticated(true);
     } catch (err) {
-      sessionStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_KEY);
       if (err instanceof ApiError && err.status === 401) {
         throw new Error("Wrong password");
       }

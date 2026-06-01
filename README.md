@@ -290,6 +290,31 @@ Each leaderboard entry carries all five aggregates (`mean`, `median`, `mode`, `m
 
 **Hard cancel.** Cancelling reaches in-flight work: the server marks the run(s) `cancelled`, and the worker — which polls `GET /internal/runs/{id}/status` while a wrapper runs — kills the wrapper's whole process group (`Setpgid` + `kill(-pgid)`). `handleResult` treats `cancelled` as sticky, so a natural completion landing in the kill window can't resurrect the run.
 
+## Live KOTH scoreboard
+
+For a public-facing, big-screen scoreboard during a live event, this template gives you the data plane — leaderboard metrics, raw distributions, and a push channel — but deliberately stops short of the presentation layer. The seams below are meant to keep an implementer out of the schema, worker, and queue plumbing.
+
+**What's already there to build on**
+
+- `GET /api/suites/{id}/leaderboard` — ranked entries with all metrics, CI95, and p-vs-leader. This is the data you'd show on screen.
+- `GET /api/suites/{id}/distributions` — raw per-submission score arrays if you want histograms or animated dot plots.
+- `GET /api/events` — server-sent stream of run state changes. Subscribe once and refetch the leaderboard whenever a nudge arrives; same mechanism the operator SPA uses, so an idle scoreboard pushes nothing while a busy one updates within ~600ms of a run completing.
+
+**Typical gaps to close**
+
+- **Public auth model.** All `/api/*` is behind the shared password today. For an embeddable or kiosk scoreboard you'll usually want a separate read-only route group (e.g. `/public/suites/{id}/leaderboard`, `/public/suites/{id}/events`) gated by a per-event display token, or unauthenticated and pinned to a single suite ID. Mount it alongside the existing `/api` router in `internal/server/server.go` — reuse the handlers, swap the auth middleware.
+- **Presentation.** Pick whichever path fits your event:
+  - **New SPA route** (e.g. `/scoreboard/:id`) hitting the public endpoints — easiest path if you want to share existing components like `Leaderboard` and `Histogram` and pick up the M2 aesthetic for free.
+  - **Standalone static page** (single HTML file with vanilla `fetch` + `EventSource`) — easiest path if you want to drop it on a different domain, run it without the SPA build, or hand it to event organisers as a one-file artifact.
+- **Grouping.** Submissions are the natural ranking unit, but events often score by team. Either aggregate `LeaderboardEntry`s by `submitter` server-side in the public handler, or add a `team` field to Submission and group by that — the underlying math (mean, CI95, paired t-test) doesn't change.
+- **Curation.** Live scoreboards usually show only a curated subset (no test uploads, no admin probes). Filter by name prefix, an `is_public` flag, or an explicit allowlist before responding from the public handler.
+
+**Things to think about before the event**
+
+- Most browsers cap concurrent SSE connections per origin to ~6. If you expect more viewers than that, terminate SSE at a CDN edge that supports it, or fall back to short-interval polling on the public route.
+- Decide up front whether in-flight rows are visible. The operator leaderboard buckets them under "in flight" without metrics; some events prefer to hide them entirely until they have at least one succeeded run, so the on-screen ranking only ever grows downward.
+- The leaderboard handler scans the suite's runs every call. Fine for the operator SPA; for a heavily-viewed public scoreboard, cache the response with a short TTL (a few seconds) keyed by suite ID — the SSE nudge invalidates it.
+
 ## Status
 
 Usable for small-to-medium evals end-to-end:
